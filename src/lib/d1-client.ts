@@ -35,6 +35,10 @@ export const d1Client = {
     tasks: {
         async getAll() {
             const res = await fetch(`${API_BASE}/tasks`);
+            if (!res.ok) {
+                console.error('Tasks API error:', res.status, res.statusText);
+                throw new Error(`Tasks API failed: ${res.status}`);
+            }
             const data = await res.json();
             return toCamelCase(data);
         },
