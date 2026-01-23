@@ -559,6 +559,8 @@ export function useValidationData() {
             if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate || null;
             if (updates.completed !== undefined) dbUpdates.completed = updates.completed;
             if (updates.subtasks !== undefined) dbUpdates.subtasks = updates.subtasks;
+            if (updates.assignee !== undefined) dbUpdates.assignee = updates.assignee || null;
+            if (updates.linkedInterviewId !== undefined) dbUpdates.linked_interview_id = updates.linkedInterviewId || null;
 
             const { error } = await supabase.from('tasks').update(dbUpdates).eq('id', id);
             if (error) console.error('Sync error:', error);
