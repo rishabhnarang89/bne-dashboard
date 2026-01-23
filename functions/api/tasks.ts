@@ -26,7 +26,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             case 'GET': {
                 // Get all tasks
                 const { results } = await env.DB.prepare('SELECT * FROM tasks ORDER BY week_id, created_at').all();
-                return Response.json(results, { headers: corsHeaders });
+                const parsedResults = results.map((task: any) => ({
+                    ...task,
+                    completed: task.completed === 1,
+                    is_default: task.is_default === 1,
+                    subtasks: typeof task.subtasks === 'string' ? JSON.parse(task.subtasks) : (task.subtasks || [])
+                }));
+                return Response.json(parsedResults, { headers: corsHeaders });
             }
 
             case 'POST': {

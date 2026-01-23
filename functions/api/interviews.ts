@@ -24,7 +24,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         switch (method) {
             case 'GET': {
                 const { results } = await env.DB.prepare('SELECT * FROM interviews ORDER BY date DESC').all();
-                return Response.json(results, { headers: corsHeaders });
+                const parsedResults = results.map((interview: any) => ({
+                    ...interview,
+                    questions: typeof interview.questions === 'string' ? JSON.parse(interview.questions) : (interview.questions || []),
+                    key_insights: typeof interview.key_insights === 'string' ? JSON.parse(interview.key_insights) : (interview.key_insights || [])
+                }));
+                return Response.json(parsedResults, { headers: corsHeaders });
             }
 
             case 'POST': {

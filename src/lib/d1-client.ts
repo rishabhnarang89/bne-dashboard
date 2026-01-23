@@ -10,7 +10,8 @@ const toCamelCase = (obj: any): any => {
     } else if (obj !== null && typeof obj === 'object') {
         return Object.keys(obj).reduce((acc, key) => {
             const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-            acc[camelKey] = toCamelCase(obj[key]);
+            const value = obj[key];
+            acc[camelKey] = (value !== null && typeof value === 'object') ? toCamelCase(value) : value;
             return acc;
         }, {} as any);
     }
