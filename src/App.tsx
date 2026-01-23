@@ -1,0 +1,64 @@
+import { useState } from 'react';
+import { Sidebar, MobileHeader } from './components/Sidebar';
+import type { Tab } from './components/Sidebar';
+import { Timeline } from './components/views/Timeline';
+import { Interviews } from './components/views/Interviews';
+import { BuildGuide } from './components/views/BuildGuide';
+import { Decision } from './components/views/Decision';
+import { Analytics } from './components/views/Analytics';
+import { Settings } from './components/views/Settings';
+import { ToastProvider } from './components/ui';
+
+const TAB_CONFIG: Record<Tab, { title: string; subtitle: string }> = {
+  timeline: { title: 'Week-by-Week Plan', subtitle: 'Track your progress through the 4-week validation sprint.' },
+  interviews: { title: 'Teacher Interview Tracker', subtitle: 'Log feedback, capture insights, and calculate adoption scores.' },
+  build: { title: 'Hardware & Software Guide', subtitle: 'Step-by-step instructions to build the MVP.' },
+  decision: { title: 'Go/No-Go Decision Framework', subtitle: 'Live view of your validation criteria and recommendation.' },
+  analytics: { title: 'Analytics Dashboard', subtitle: 'Visualize your interview data with charts and trends.' },
+  settings: { title: 'Settings', subtitle: 'Customize goals, appearance, and manage your data.' }
+};
+
+function App() {
+  const [activeTab, setActiveTab] = useState<Tab>('timeline');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'timeline': return <Timeline />;
+      case 'interviews': return <Interviews />;
+      case 'build': return <BuildGuide />;
+      case 'decision': return <Decision />;
+      case 'analytics': return <Analytics />;
+      case 'settings': return <Settings />;
+      default: return <Timeline />;
+    }
+  };
+
+  const tabConfig = TAB_CONFIG[activeTab];
+
+  return (
+    <ToastProvider>
+      <div className="app-container">
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+
+        <main className="main-content">
+          <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
+
+          <header style={{ marginBottom: '24px' }}>
+            <h2 style={{ marginBottom: '6px', fontSize: '1.75rem' }}>{tabConfig.title}</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{tabConfig.subtitle}</p>
+          </header>
+
+          {renderContent()}
+        </main>
+      </div>
+    </ToastProvider>
+  );
+}
+
+export default App;
