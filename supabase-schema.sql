@@ -52,12 +52,15 @@ CREATE TABLE IF NOT EXISTS interviews (
     date DATE NOT NULL,
     scheduled_date DATE,
     status TEXT NOT NULL CHECK (status IN ('scheduled', 'completed', 'cancelled')),
+    duration INTEGER,  -- Scheduled duration in minutes
+    time_spent INTEGER,  -- Actual time spent in minutes
     setup_time INTEGER NOT NULL DEFAULT 0,
     success TEXT NOT NULL CHECK (success IN ('yes', 'no')),
     score INTEGER NOT NULL CHECK (score >= 1 AND score <= 10),
     commitment TEXT NOT NULL CHECK (commitment IN ('none', 'maybe', 'pilot')),
     price_reaction TEXT NOT NULL CHECK (price_reaction IN ('positive', 'neutral', 'negative')),
     notes TEXT,
+    questions JSONB,  -- Interview questions and answers
     key_insights JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );

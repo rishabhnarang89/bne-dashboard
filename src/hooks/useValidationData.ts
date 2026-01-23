@@ -637,6 +637,15 @@ export function useValidationData() {
             if (updates.status !== undefined) dbUpdates.status = updates.status;
             if (updates.notes !== undefined) dbUpdates.notes = updates.notes || null;
 
+            // Outreach tracking fields
+            if (updates.contactMethod !== undefined) dbUpdates.contact_method = updates.contactMethod || null;
+            if (updates.responseDate !== undefined) dbUpdates.response_date = updates.responseDate || null;
+            if (updates.lastContactDate !== undefined) dbUpdates.last_contact_date = updates.lastContactDate || null;
+            if (updates.nextFollowUpDate !== undefined) dbUpdates.next_follow_up_date = updates.nextFollowUpDate || null;
+            if (updates.linkedinMessageSent !== undefined) dbUpdates.linkedin_message_sent = updates.linkedinMessageSent;
+            if (updates.emailSent !== undefined) dbUpdates.email_sent = updates.emailSent;
+            if (updates.phoneCallMade !== undefined) dbUpdates.phone_call_made = updates.phoneCallMade;
+
             const { error } = await supabase.from('teachers').update(dbUpdates).eq('id', id);
             if (error) console.error('Sync error:', error);
         }
