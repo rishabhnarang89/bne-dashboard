@@ -4,9 +4,11 @@ import type { Teacher, TeacherStatus, Interview, InterviewQuestion, ContactMetho
 import {
     Plus, Trash2, Edit3, Search,
     Building, Clock, Star, MessageSquare,
-    User, Linkedin, Mail, Calendar, Users, ExternalLink
+    User, Linkedin, Mail, Calendar, Users, ExternalLink,
+    LayoutGrid, List as ListIcon, TrendingUp, Filter
 } from 'lucide-react';
 import { useToast, InfoBlock, Modal, InterviewTimer, QuestionnaireForm } from '../ui';
+import { KanbanBoard, TeacherCard, OutreachStats } from './CRMComponents';
 
 type ViewMode = 'list' | 'detail';
 type FilterStatus = 'all' | TeacherStatus;
@@ -30,6 +32,7 @@ export const Interviews = () => {
 
     // View mode
     const [viewMode, setViewMode] = useState<ViewMode>('list');
+    const [crmView, setCrmView] = useState<'list' | 'kanban'>('list');
     const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(null);
 
     // Filter & Search state
@@ -252,169 +255,99 @@ export const Interviews = () => {
 
     const renderListView = () => (
         <>
-            {/* Info Block */}
-            <InfoBlock
-                icon={<Users size={20} />}
-                title="Teacher CRM"
-                description="Manage your teacher contacts. Add teachers, track outreach status, and log interviews. Click a teacher to view details and add interviews."
-                variant="info"
-            />
+            {/* Outreach Pipeline Stats */}
+            <OutreachStats teachers={teachers} interviews={interviews} />
 
-            {/* Stats Cards */}
-            <div className="stats-grid" style={{ marginTop: '20px' }}>
-                <div className="stat-card">
-                    <div className="stat-label">Total Contacts</div>
-                    <div className="stat-value">{stats.total}</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-label">Connected</div>
-                    <div className="stat-value">{stats.connected}</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-label">Interviewed</div>
-                    <div className="stat-value">{stats.interviewed}</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-label">Interviews</div>
-                    <div className="stat-value">{stats.totalInterviews}</div>
-                </div>
-            </div>
-
-            {/* Search & Filters */}
-            <div className="glass-card" style={{ marginTop: '20px' }}>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                    <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
-                        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                        <input
-                            className="input"
-                            type="text"
-                            placeholder="Search by name, school, email..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            style={{ paddingLeft: '36px' }}
-                        />
-                    </div>
-                    <select
-                        className="input"
-                        value={filterStatus}
-                        onChange={e => setFilterStatus(e.target.value as FilterStatus)}
-                        style={{ width: 'auto' }}
-                    >
-                        <option value="all">All Status</option>
-                        <option value="identified">🔍 Identified</option>
-                        <option value="request_sent">📤 Request Sent</option>
-                        <option value="connected">🤝 Connected</option>
-                        <option value="scheduled">📅 Scheduled</option>
-                        <option value="interviewed">✅ Interviewed</option>
-                        <option value="follow_up">🔄 Follow-up</option>
-                    </select>
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => { setEditingTeacher(null); setTeacherForm({ status: 'identified', schoolType: 'Gymnasium' }); setTeacherModalOpen(true); }}
-                    >
-                        <Plus size={16} /> Add Teacher
-                    </button>
-                </div>
-
-                {/* Teacher List */}
-                {filteredTeachers.length === 0 && teachers.length === 0 && (
-                    <div className="empty-state">
-                        <Users size={36} />
-                        <div className="empty-state-title">No Teachers Yet</div>
-                        <div className="empty-state-description">Add your first teacher contact to start tracking your outreach.</div>
+            {/* View Controls & Filter Header */}
+            <div className="glass-card" style={{ marginBottom: '20px', padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
                         <button
-                            className="btn btn-primary"
-                            style={{ marginTop: '16px' }}
-                            onClick={() => setTeacherModalOpen(true)}
+                            className={`btn ${crmView === 'list' ? 'btn-primary' : 'btn-ghost'}`}
+                            onClick={() => setCrmView('list')}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                         >
-                            <Plus size={16} /> Add First Teacher
+                            <ListIcon size={16} /> List
+                        </button>
+                        <button
+                            className={`btn ${crmView === 'kanban' ? 'btn-primary' : 'btn-ghost'}`}
+                            onClick={() => setCrmView('kanban')}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        >
+                            <LayoutGrid size={16} /> Kanban
                         </button>
                     </div>
-                )}
 
-                {filteredTeachers.length === 0 && teachers.length > 0 && (
-                    <div className="empty-state">
-                        <Search size={36} />
-                        <div className="empty-state-title">No Results</div>
-                        <div className="empty-state-description">Try adjusting your search or filter criteria.</div>
+                    <div style={{ display: 'flex', gap: '10px', flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        <div style={{ minWidth: '240px', position: 'relative' }}>
+                            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                            <input
+                                className="input"
+                                type="text"
+                                placeholder="Search teachers..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                style={{ paddingLeft: '36px' }}
+                            />
+                        </div>
+                        <select
+                            className="input"
+                            value={filterStatus}
+                            onChange={e => setFilterStatus(e.target.value as FilterStatus)}
+                            style={{ width: 'auto' }}
+                        >
+                            <option value="all">All Status</option>
+                            <option value="identified">🔍 Identified</option>
+                            <option value="request_sent">📤 Sent</option>
+                            <option value="connected">🤝 Connected</option>
+                            <option value="scheduled">📅 Scheduled</option>
+                            <option value="interviewed">✅ Done</option>
+                        </select>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => { setEditingTeacher(null); setTeacherForm({ status: 'identified', schoolType: 'Gymnasium' }); setTeacherModalOpen(true); }}
+                        >
+                            <Plus size={16} /> Add Teacher
+                        </button>
                     </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {filteredTeachers.map(teacher => {
-                        const teacherInterviewCount = getInterviewsByTeacher(teacher.id).length;
-                        const statusConfig = STATUS_CONFIG[teacher.status];
-
-                        return (
-                            <div
-                                key={teacher.id}
-                                style={{
-                                    padding: '16px',
-                                    background: 'var(--bg-elevated)',
-                                    borderRadius: 'var(--radius-md)',
-                                    border: '1px solid var(--border-light)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
-                                onClick={() => openTeacherDetail(teacher.id)}
-                                onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary)'}
-                                onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border-light)'}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                            <User size={16} color="var(--primary)" />
-                                            <span style={{ fontWeight: 600, fontSize: '1rem' }}>{teacher.name}</span>
-                                            <span
-                                                style={{
-                                                    fontSize: '0.7rem',
-                                                    padding: '2px 8px',
-                                                    borderRadius: '10px',
-                                                    background: statusConfig.bg,
-                                                    color: statusConfig.color,
-                                                    fontWeight: 600
-                                                }}
-                                            >
-                                                {statusConfig.emoji} {statusConfig.label}
-                                            </span>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <Building size={12} /> {teacher.school}
-                                            </span>
-                                            <span>• {teacher.schoolType}</span>
-                                            {teacher.designation && <span>• {teacher.designation}</span>}
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        {teacherInterviewCount > 0 && (
-                                            <span className="tag tag-success">
-                                                {teacherInterviewCount} Interview{teacherInterviewCount > 1 ? 's' : ''}
-                                            </span>
-                                        )}
-                                        {teacher.linkedinUrl && (
-                                            <a
-                                                href={teacher.linkedinUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                onClick={e => e.stopPropagation()}
-                                                style={{ color: '#0077b5' }}
-                                            >
-                                                <Linkedin size={18} />
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                                {teacher.requestSentDate && (
-                                    <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                        Request sent: {new Date(teacher.requestSentDate).toLocaleDateString()}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
                 </div>
             </div>
+
+            {/* View Rendering */}
+            {crmView === 'kanban' ? (
+                <KanbanBoard
+                    teachers={filteredTeachers}
+                    interviewCounts={teachers.reduce((acc, t) => {
+                        acc[t.id] = getInterviewsByTeacher(t.id).length;
+                        return acc;
+                    }, {} as Record<number, number>)}
+                    onTeacherClick={openTeacherDetail}
+                    onEdit={openEditTeacher}
+                    onDelete={(id) => setDeleteTeacherModalOpen(id)}
+                    onStatusChange={(id, status) => updateTeacher(id, { status })}
+                />
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                    {filteredTeachers.map(teacher => (
+                        <TeacherCard
+                            key={teacher.id}
+                            teacher={teacher}
+                            interviewCount={getInterviewsByTeacher(teacher.id).length}
+                            onEdit={openEditTeacher}
+                            onDelete={(id) => setDeleteTeacherModalOpen(id)}
+                            onClick={openTeacherDetail}
+                            onStatusChange={(id, status) => updateTeacher(id, { status })}
+                        />
+                    ))}
+                    {filteredTeachers.length === 0 && (
+                        <div className="empty-state" style={{ gridColumn: '1/-1' }}>
+                            <Search size={36} />
+                            <div className="empty-state-title">No Teachers Found</div>
+                            <div className="empty-state-description">Try adjusting your search or filters.</div>
+                        </div>
+                    )}
+                </div>
+            )}
         </>
     );
 
@@ -632,7 +565,7 @@ export const Interviews = () => {
                                                 color: 'var(--primary)',
                                                 userSelect: 'none'
                                             }}>
-                                                📋 View Questionnaire Responses ({interview.questions.filter(q => q.answer && q.answer.trim()).length}/{interview.questions.length} answered)
+                                                📋 View Questionnaire Responses ({interview.questions.filter((q: any) => q.answer && q.answer.trim()).length}/{interview.questions.length} answered)
                                             </summary>
                                             <div style={{
                                                 marginTop: '12px',
@@ -643,7 +576,7 @@ export const Interviews = () => {
                                                 flexDirection: 'column',
                                                 gap: '16px'
                                             }}>
-                                                {interview.questions.map((q, idx) => (
+                                                {interview.questions.map((q: any, idx: number) => (
                                                     <div key={q.id} style={{
                                                         paddingBottom: '12px',
                                                         borderBottom: idx < interview.questions!.length - 1 ? '1px solid var(--border-default)' : 'none'
