@@ -1,9 +1,9 @@
 import React from 'react';
 import {
     User, Building, Linkedin, Mail, Calendar,
-    MoreHorizontal, ArrowRight, Star, Clock,
-    MessageSquare, ExternalLink, Trash2, Edit3,
-    CheckCircle2, AlertCircle, TrendingUp
+    ArrowRight, Clock, Search,
+    MessageSquare, Trash2, Edit3,
+    CheckCircle2, TrendingUp
 } from 'lucide-react';
 import type { Teacher, TeacherStatus, ContactMethod } from '../../hooks/useValidationData';
 
@@ -182,7 +182,7 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
                     <button
                         className="btn-icon-sm"
                         onClick={(e) => { e.stopPropagation(); onEdit(teacher); }}
-                        label="Edit"
+                        title="Edit"
                     >
                         <Edit3 size={14} />
                     </button>

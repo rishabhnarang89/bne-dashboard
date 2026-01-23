@@ -256,7 +256,7 @@ export const Interviews = () => {
     const renderListView = () => (
         <>
             {/* Outreach Pipeline Stats */}
-            <OutreachStats teachers={teachers} interviews={interviews} />
+            <OutreachStats teachers={teachers} />
 
             {/* View Controls & Filter Header */}
             <div className="glass-card" style={{ marginBottom: '20px', padding: '16px' }}>
