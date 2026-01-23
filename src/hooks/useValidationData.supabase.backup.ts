@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { d1Client } from '../lib/d1-client';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 // ============================================================================
 // TYPES
@@ -180,11 +180,148 @@ const createDefaultTasks = (): Task[] => [
 ];
 
 // ============================================================================
+// SUPABASE HELPERS
+// ============================================================================
+
+// Convert from camelCase to snake_case for Supabase
+const toDbTask = (task: Task) => ({
+    id: task.id,
+    title: task.title,
+    notes: task.notes || null,
+    week_id: task.weekId,
+    priority: task.priority,
+    due_date: task.dueDate || null,
+    completed: task.completed,
+    completed_at: task.completedAt || null,
+    created_at: task.createdAt,
+    is_default: task.isDefault,
+    subtasks: task.subtasks,
+    linked_interview_id: task.linkedInterviewId || null,
+    assignee: task.assignee || null
+});
+
+// Convert from snake_case to camelCase for app
+const fromDbTask = (db: any): Task => ({
+    id: db.id,
+    title: db.title,
+    notes: db.notes || undefined,
+    weekId: db.week_id,
+    priority: db.priority,
+    dueDate: db.due_date || undefined,
+    completed: db.completed,
+    completedAt: db.completed_at || undefined,
+    createdAt: db.created_at,
+    isDefault: db.is_default,
+    subtasks: db.subtasks || [],
+    linkedInterviewId: db.linked_interview_id || undefined,
+    assignee: db.assignee || undefined
+});
+
+const toDbInterview = (i: Interview) => ({
+    id: i.id,
+    teacher_id: i.teacherId,
+    date: i.date,
+    scheduled_date: i.scheduledDate || null,
+    status: i.status,
+    duration: i.duration || null,
+    time_spent: i.timeSpent || null,
+    setup_time: i.setupTime,
+    success: i.success,
+    score: i.score,
+    commitment: i.commitment,
+    price_reaction: i.priceReaction,
+    notes: i.notes || null,
+    questions: i.questions || null,
+    key_insights: i.keyInsights || null
+});
+
+const fromDbInterview = (db: any): Interview => ({
+    id: db.id,
+    teacherId: db.teacher_id,
+    date: db.date,
+    scheduledDate: db.scheduled_date || undefined,
+    status: db.status || 'completed',
+    duration: db.duration || undefined,
+    timeSpent: db.time_spent || undefined,
+    setupTime: db.setup_time,
+    success: db.success,
+    score: db.score,
+    commitment: db.commitment,
+    priceReaction: db.price_reaction,
+    notes: db.notes || undefined,
+    questions: db.questions || undefined,
+    keyInsights: db.key_insights || undefined
+});
+
+const toDbTeacher = (t: Teacher) => ({
+    id: t.id,
+    name: t.name,
+    designation: t.designation || null,
+    department: t.department || null,
+    school: t.school,
+    school_type: t.schoolType,
+    email: t.email || null,
+    linkedin_url: t.linkedinUrl || null,
+    request_sent_date: t.requestSentDate || null,
+    status: t.status,
+    notes: t.notes || null,
+    created_at: t.createdAt,
+    // Outreach tracking fields
+    contact_method: t.contactMethod || null,
+    response_date: t.responseDate || null,
+    last_contact_date: t.lastContactDate || null,
+    next_follow_up_date: t.nextFollowUpDate || null,
+    linkedin_message_sent: t.linkedinMessageSent || false,
+    email_sent: t.emailSent || false,
+    phone_call_made: t.phoneCallMade || false
+});
+
+const fromDbTeacher = (db: any): Teacher => ({
+    id: db.id,
+    name: db.name,
+    designation: db.designation || undefined,
+    department: db.department || undefined,
+    school: db.school,
+    schoolType: db.school_type,
+    email: db.email || undefined,
+    linkedinUrl: db.linkedin_url || undefined,
+    requestSentDate: db.request_sent_date || undefined,
+    status: db.status,
+    notes: db.notes || undefined,
+    createdAt: db.created_at,
+    // Outreach tracking fields
+    contactMethod: db.contact_method || undefined,
+    responseDate: db.response_date || undefined,
+    lastContactDate: db.last_contact_date || undefined,
+    nextFollowUpDate: db.next_follow_up_date || undefined,
+    linkedinMessageSent: db.linkedin_message_sent || false,
+    emailSent: db.email_sent || false,
+    phoneCallMade: db.phone_call_made || false
+});
+
+const toDbGoals = (g: GoalSettings) => ({
+    id: 1, // Single row for goals
+    target_interviews: g.targetInterviews,
+    target_high_scores: g.targetHighScores,
+    target_pilots: g.targetPilots,
+    target_setup_time: g.targetSetupTime,
+    price_point: g.pricePoint
+});
+
+const fromDbGoals = (db: any): GoalSettings => ({
+    targetInterviews: db.target_interviews,
+    targetHighScores: db.target_high_scores,
+    targetPilots: db.target_pilots,
+    targetSetupTime: db.target_setup_time,
+    pricePoint: db.price_point
+});
+
+// ============================================================================
 // MAIN HOOK
 // ============================================================================
 
 export function useValidationData() {
-    const [isOnline, setIsOnline] = useState(true); // D1 is always available
+    const [isOnline, setIsOnline] = useState(isSupabaseConfigured());
     const [isLoading, setIsLoading] = useState(true);
     const [syncError, setSyncError] = useState<string | null>(null);
 
@@ -205,40 +342,55 @@ export function useValidationData() {
         const loadData = async () => {
             setIsLoading(true);
 
-            try {
-                // Load from D1
-                const [tasksData, teachersData, interviewsData, goalsData] = await Promise.all([
-                    d1Client.tasks.getAll(),
-                    d1Client.teachers.getAll(),
-                    d1Client.interviews.getAll(),
-                    d1Client.goals.get()
-                ]);
+            if (isSupabaseConfigured()) {
+                // Load from Supabase
+                try {
+                    const [tasksRes, teachersRes, interviewsRes, goalsRes] = await Promise.all([
+                        supabase.from('tasks').select('*'),
+                        supabase.from('teachers').select('*'),
+                        supabase.from('interviews').select('*'),
+                        supabase.from('goals').select('*').single()
+                    ]);
 
-                // If no tasks exist, initialize with defaults
-                if (tasksData.length === 0) {
-                    const defaultTasks = createDefaultTasks();
-                    for (const task of defaultTasks) {
-                        await d1Client.tasks.create(task);
+                    if (tasksRes.error) throw tasksRes.error;
+
+                    // If no tasks exist, initialize with defaults
+                    if (tasksRes.data.length === 0) {
+                        const defaultTasks = createDefaultTasks();
+                        await supabase.from('tasks').insert(defaultTasks.map(toDbTask));
+                        setTasks(defaultTasks);
+                    } else {
+                        setTasks(tasksRes.data.map(fromDbTask));
                     }
-                    setTasks(defaultTasks);
-                } else {
-                    setTasks(tasksData);
+
+                    // Load teachers
+                    if (!teachersRes.error && teachersRes.data) {
+                        setTeachers(teachersRes.data.map(fromDbTeacher));
+                    }
+
+                    // Load interviews
+                    if (!interviewsRes.error && interviewsRes.data) {
+                        setInterviews(interviewsRes.data.map(fromDbInterview));
+                    }
+
+                    if (goalsRes.data) {
+                        setGoals(fromDbGoals(goalsRes.data));
+                    } else {
+                        // Initialize goals
+                        await supabase.from('goals').insert(toDbGoals(DEFAULT_GOALS));
+                    }
+
+                    setIsOnline(true);
+                    setSyncError(null);
+                } catch (error: any) {
+                    console.error('Supabase load error:', error);
+                    setSyncError(error.message);
+                    setIsOnline(false);
+                    // Fall back to localStorage
+                    loadFromLocalStorage();
                 }
-
-                setTeachers(teachersData);
-                setInterviews(interviewsData);
-
-                if (goalsData && Object.keys(goalsData).length > 0) {
-                    setGoals(goalsData);
-                }
-
-                setIsOnline(true);
-                setSyncError(null);
-            } catch (error: any) {
-                console.error('D1 load error:', error);
-                setSyncError(error.message);
-                setIsOnline(false);
-                // Fall back to localStorage
+            } else {
+                // Load from localStorage
                 loadFromLocalStorage();
             }
 
@@ -289,11 +441,56 @@ export function useValidationData() {
         loadData();
     }, []);
 
+    // ========================================================================
+    // REAL-TIME SUBSCRIPTIONS (Supabase)
+    // ========================================================================
+
+    useEffect(() => {
+        if (!isSupabaseConfigured()) return;
+
+        const tasksSubscription = supabase
+            .channel('tasks-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    setTasks(prev => [...prev.filter(t => t.id !== payload.new.id), fromDbTask(payload.new)]);
+                } else if (payload.eventType === 'UPDATE') {
+                    setTasks(prev => prev.map(t => t.id === payload.new.id ? fromDbTask(payload.new) : t));
+                } else if (payload.eventType === 'DELETE') {
+                    setTasks(prev => prev.filter(t => t.id !== payload.old.id));
+                }
+            })
+            .subscribe();
+
+        const interviewsSubscription = supabase
+            .channel('interviews-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'interviews' }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    setInterviews(prev => [...prev.filter(i => i.id !== payload.new.id), fromDbInterview(payload.new)]);
+                } else if (payload.eventType === 'UPDATE') {
+                    setInterviews(prev => prev.map(i => i.id === payload.new.id ? fromDbInterview(payload.new) : i));
+                } else if (payload.eventType === 'DELETE') {
+                    setInterviews(prev => prev.filter(i => i.id !== payload.old.id));
+                }
+            })
+            .subscribe();
+
+        const goalsSubscription = supabase
+            .channel('goals-changes')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'goals' }, (payload) => {
+                setGoals(fromDbGoals(payload.new));
+            })
+            .subscribe();
+
+        return () => {
+            tasksSubscription.unsubscribe();
+            interviewsSubscription.unsubscribe();
+            goalsSubscription.unsubscribe();
+        };
+    }, []);
 
     // ========================================================================
     // PERSIST TO LOCALSTORAGE (always, as backup)
     // ========================================================================
-
 
     useEffect(() => { localStorage.setItem('bne_tasks_v2', JSON.stringify(tasks)); }, [tasks]);
     useEffect(() => { localStorage.setItem('bne_interviews', JSON.stringify(interviews)); }, [interviews]);
@@ -321,14 +518,11 @@ export function useValidationData() {
         setLastActivity(new Date().toISOString());
 
         if (isOnline) {
-            try {
-                await d1Client.tasks.update(id, {
-                    completed: updates.completed,
-                    completedAt: updates.completedAt || undefined
-                });
-            } catch (error) {
-                console.error('Sync error:', error);
-            }
+            const { error } = await supabase.from('tasks').update({
+                completed: updates.completed,
+                completed_at: updates.completedAt || null
+            }).eq('id', id);
+            if (error) console.error('Sync error:', error);
         }
     };
 
@@ -345,11 +539,8 @@ export function useValidationData() {
         setLastActivity(new Date().toISOString());
 
         if (isOnline) {
-            try {
-                await d1Client.tasks.create(newTask);
-            } catch (error) {
-                console.error('Sync error:', error);
-            }
+            const { error } = await supabase.from('tasks').insert(toDbTask(newTask));
+            if (error) console.error('Sync error:', error);
         }
 
         return newTask;
@@ -360,11 +551,19 @@ export function useValidationData() {
         setLastActivity(new Date().toISOString());
 
         if (isOnline) {
-            try {
-                await d1Client.tasks.update(id, updates);
-            } catch (error) {
-                console.error('Sync error:', error);
-            }
+            const dbUpdates: any = {};
+            if (updates.title !== undefined) dbUpdates.title = updates.title;
+            if (updates.notes !== undefined) dbUpdates.notes = updates.notes || null;
+            if (updates.weekId !== undefined) dbUpdates.week_id = updates.weekId;
+            if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
+            if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate || null;
+            if (updates.completed !== undefined) dbUpdates.completed = updates.completed;
+            if (updates.subtasks !== undefined) dbUpdates.subtasks = updates.subtasks;
+            if (updates.assignee !== undefined) dbUpdates.assignee = updates.assignee || null;
+            if (updates.linkedInterviewId !== undefined) dbUpdates.linked_interview_id = updates.linkedInterviewId || null;
+
+            const { error } = await supabase.from('tasks').update(dbUpdates).eq('id', id);
+            if (error) console.error('Sync error:', error);
         }
     };
 
@@ -372,11 +571,8 @@ export function useValidationData() {
         setTasks(prev => prev.filter(t => t.id !== id));
 
         if (isOnline) {
-            try {
-                await d1Client.tasks.delete(id);
-            } catch (error) {
-                console.error('Sync error:', error);
-            }
+            const { error } = await supabase.from('tasks').delete().eq('id', id);
+            if (error) console.error('Sync error:', error);
         }
     };
 
@@ -419,14 +615,8 @@ export function useValidationData() {
         setLastActivity(new Date().toISOString());
 
         if (isOnline) {
-            try {
-                const result = await d1Client.teachers.create(newTeacher);
-                if (result.id) {
-                    newTeacher.id = result.id;
-                }
-            } catch (error) {
-                console.error('Sync error:', error);
-            }
+            const { error } = await supabase.from('teachers').insert(toDbTeacher(newTeacher));
+            if (error) console.error('Sync error:', error);
         }
     };
 
@@ -456,7 +646,8 @@ export function useValidationData() {
             if (updates.emailSent !== undefined) dbUpdates.email_sent = updates.emailSent;
             if (updates.phoneCallMade !== undefined) dbUpdates.phone_call_made = updates.phoneCallMade;
 
-            await d1Client.teachers.update(id, updates);
+            const { error } = await supabase.from('teachers').update(dbUpdates).eq('id', id);
+            if (error) console.error('Sync error:', error);
         }
     };
 
@@ -469,11 +660,8 @@ export function useValidationData() {
         }
 
         if (isOnline) {
-            try {
-                await d1Client.teachers.delete(id);
-            } catch (error) {
-                console.error('Sync error:', error);
-            }
+            const { error } = await supabase.from('teachers').delete().eq('id', id);
+            if (error) console.error('Sync error:', error);
         }
     };
 
@@ -496,14 +684,8 @@ export function useValidationData() {
         }
 
         if (isOnline) {
-            try {
-                const result = await d1Client.interviews.create(newInterview);
-                if (result.id) {
-                    newInterview.id = result.id;
-                }
-            } catch (error) {
-                console.error('Sync error:', error);
-            }
+            const { error } = await supabase.from('interviews').insert(toDbInterview(newInterview));
+            if (error) console.error('Sync error:', error);
         }
     };
 
@@ -512,11 +694,18 @@ export function useValidationData() {
         setLastActivity(new Date().toISOString());
 
         if (isOnline) {
-            try {
-                await d1Client.interviews.update(id, updates);
-            } catch (error) {
-                console.error('Sync error:', error);
-            }
+            const dbUpdates: any = {};
+            if (updates.teacherId !== undefined) dbUpdates.teacher_id = updates.teacherId;
+            if (updates.status !== undefined) dbUpdates.status = updates.status;
+            if (updates.setupTime !== undefined) dbUpdates.setup_time = updates.setupTime;
+            if (updates.score !== undefined) dbUpdates.score = updates.score;
+            if (updates.notes !== undefined) dbUpdates.notes = updates.notes || null;
+            if (updates.commitment !== undefined) dbUpdates.commitment = updates.commitment;
+            if (updates.priceReaction !== undefined) dbUpdates.price_reaction = updates.priceReaction;
+            if (updates.success !== undefined) dbUpdates.success = updates.success;
+
+            const { error } = await supabase.from('interviews').update(dbUpdates).eq('id', id);
+            if (error) console.error('Sync error:', error);
         }
     };
 
@@ -524,11 +713,8 @@ export function useValidationData() {
         setInterviews(prev => prev.filter(i => i.id !== id));
 
         if (isOnline) {
-            try {
-                await d1Client.interviews.delete(id);
-            } catch (error) {
-                console.error('Sync error:', error);
-            }
+            const { error } = await supabase.from('interviews').delete().eq('id', id);
+            if (error) console.error('Sync error:', error);
         }
     };
 
@@ -546,11 +732,8 @@ export function useValidationData() {
         setGoals(merged);
 
         if (isOnline) {
-            try {
-                await d1Client.goals.update(newGoals);
-            } catch (error) {
-                console.error('Sync error:', error);
-            }
+            const { error } = await supabase.from('goals').upsert(toDbGoals(merged));
+            if (error) console.error('Sync error:', error);
         }
     };
 
@@ -560,24 +743,11 @@ export function useValidationData() {
         setReflections([]);
 
         if (isOnline) {
-            try {
-                // Delete all tasks and interviews, then recreate default tasks
-                const allTasks = await d1Client.tasks.getAll();
-                const allInterviews = await d1Client.interviews.getAll();
-
-                for (const task of allTasks) {
-                    await d1Client.tasks.delete(task.id);
-                }
-                for (const interview of allInterviews) {
-                    await d1Client.interviews.delete(interview.id);
-                }
-
-                for (const task of createDefaultTasks()) {
-                    await d1Client.tasks.create(task);
-                }
-            } catch (error) {
-                console.error('Clear data error:', error);
-            }
+            await Promise.all([
+                supabase.from('tasks').delete().neq('id', 'x'),
+                supabase.from('interviews').delete().neq('id', 0),
+                supabase.from('tasks').insert(createDefaultTasks().map(toDbTask))
+            ]);
         }
     };
 
@@ -634,37 +804,13 @@ export function useValidationData() {
                 if (data.reflections) setReflections(data.reflections);
                 if (data.goals) setGoals(data.goals);
 
-                // Sync to D1 if online
+                // Sync to Supabase if online
                 if (isOnline) {
-                    try {
-                        // Clear existing data
-                        const allTasks = await d1Client.tasks.getAll();
-                        const allInterviews = await d1Client.interviews.getAll();
-
-                        for (const task of allTasks) {
-                            await d1Client.tasks.delete(task.id);
-                        }
-                        for (const interview of allInterviews) {
-                            await d1Client.interviews.delete(interview.id);
-                        }
-
-                        // Import new data
-                        if (data.tasks) {
-                            for (const task of data.tasks) {
-                                await d1Client.tasks.create(task);
-                            }
-                        }
-                        if (data.interviews) {
-                            for (const interview of data.interviews) {
-                                await d1Client.interviews.create(interview);
-                            }
-                        }
-                        if (data.goals) {
-                            await d1Client.goals.update(data.goals);
-                        }
-                    } catch (error) {
-                        console.error('Import sync error:', error);
-                    }
+                    await supabase.from('tasks').delete().neq('id', 'x');
+                    await supabase.from('interviews').delete().neq('id', 0);
+                    if (data.tasks) await supabase.from('tasks').insert(data.tasks.map(toDbTask));
+                    if (data.interviews) await supabase.from('interviews').insert(data.interviews.map(toDbInterview));
+                    if (data.goals) await supabase.from('goals').upsert(toDbGoals(data.goals));
                 }
             } catch (err) {
                 console.error('Failed to import data:', err);

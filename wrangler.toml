@@ -1,0 +1,8 @@
+name = "bne-dashboard"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bne-dashboard-db"
+database_id = "c6a54b74-5744-483d-abd1-f0c0c1d89bf7"
