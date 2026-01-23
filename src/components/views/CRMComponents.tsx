@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-    User, Building, Linkedin, Mail, Calendar,
-    ArrowRight, Clock, Search,
+    Building, Linkedin, Mail, Calendar,
+    Clock, Search,
     MessageSquare, Trash2, Edit3,
     CheckCircle2, TrendingUp
 } from 'lucide-react';
-import type { Teacher, TeacherStatus, ContactMethod } from '../../hooks/useValidationData';
+import type { Teacher, TeacherStatus } from '../../hooks/useValidationData';
 
 interface TeacherCardProps {
     teacher: Teacher;
@@ -13,7 +13,6 @@ interface TeacherCardProps {
     onEdit: (teacher: Teacher) => void;
     onDelete: (id: number) => void;
     onClick: (id: number) => void;
-    onStatusChange: (id: number, status: TeacherStatus) => void;
 }
 
 export const TeacherCard: React.FC<TeacherCardProps> = ({
@@ -21,8 +20,7 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
     interviewCount,
     onEdit,
     onDelete,
-    onClick,
-    onStatusChange
+    onClick
 }) => {
     const statusColors: Record<TeacherStatus, { color: string; bg: string }> = {
         identified: { color: '#6b7280', bg: '#f3f4f6' },
@@ -205,7 +203,6 @@ interface KanbanBoardProps {
     onTeacherClick: (id: number) => void;
     onEdit: (teacher: Teacher) => void;
     onDelete: (id: number) => void;
-    onStatusChange: (id: number, status: TeacherStatus) => void;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -213,8 +210,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     interviewCounts,
     onTeacherClick,
     onEdit,
-    onDelete,
-    onStatusChange
+    onDelete
 }) => {
     const statuses: { id: TeacherStatus; label: string; icon: React.ReactNode }[] = [
         { id: 'identified', label: 'Identified', icon: <Search size={14} /> },
@@ -281,7 +277,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                     onEdit={onEdit}
                                     onDelete={onDelete}
                                     onClick={onTeacherClick}
-                                    onStatusChange={onStatusChange}
                                 />
                             ))
                         }

@@ -3,9 +3,9 @@ import { useValidationData, DEFAULT_QUESTIONS } from '../../hooks/useValidationD
 import type { Teacher, TeacherStatus, Interview, InterviewQuestion, ContactMethod } from '../../hooks/useValidationData';
 import {
     Plus, Trash2, Edit3, Search,
-    Building, Clock, Star, MessageSquare,
-    User, Linkedin, Mail, Calendar, Users, ExternalLink,
-    LayoutGrid, List as ListIcon, TrendingUp, Filter
+    Clock, Star, MessageSquare,
+    Linkedin, Mail, Calendar, ExternalLink,
+    LayoutGrid, List as ListIcon
 } from 'lucide-react';
 import { useToast, InfoBlock, Modal, InterviewTimer, QuestionnaireForm } from '../ui';
 import { KanbanBoard, TeacherCard, OutreachStats } from './CRMComponents';
@@ -25,7 +25,7 @@ const STATUS_CONFIG: Record<TeacherStatus, { label: string; color: string; bg: s
 export const Interviews = () => {
     const {
         teachers, addTeacher, updateTeacher, deleteTeacher,
-        interviews, addInterview, updateInterview, deleteInterview,
+        addInterview, updateInterview, deleteInterview,
         getInterviewsByTeacher, goals
     } = useValidationData();
     const { showToast } = useToast();
@@ -98,16 +98,6 @@ export const Interviews = () => {
     // Get selected teacher
     const selectedTeacher = selectedTeacherId ? teachers.find(t => t.id === selectedTeacherId) : null;
     const teacherInterviews = selectedTeacherId ? getInterviewsByTeacher(selectedTeacherId) : [];
-
-    // Stats
-    const stats = useMemo(() => ({
-        total: teachers.length,
-        identified: teachers.filter(t => t.status === 'identified').length,
-        requestSent: teachers.filter(t => t.status === 'request_sent').length,
-        connected: teachers.filter(t => t.status === 'connected').length,
-        interviewed: teachers.filter(t => t.status === 'interviewed').length,
-        totalInterviews: interviews.filter(i => i.status === 'completed').length
-    }), [teachers, interviews]);
 
     // Handle teacher form submit
     const handleTeacherSubmit = () => {
@@ -324,7 +314,6 @@ export const Interviews = () => {
                     onTeacherClick={openTeacherDetail}
                     onEdit={openEditTeacher}
                     onDelete={(id) => setDeleteTeacherModalOpen(id)}
-                    onStatusChange={(id, status) => updateTeacher(id, { status })}
                 />
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
@@ -336,7 +325,6 @@ export const Interviews = () => {
                             onEdit={openEditTeacher}
                             onDelete={(id) => setDeleteTeacherModalOpen(id)}
                             onClick={openTeacherDetail}
-                            onStatusChange={(id, status) => updateTeacher(id, { status })}
                         />
                     ))}
                     {filteredTeachers.length === 0 && (
