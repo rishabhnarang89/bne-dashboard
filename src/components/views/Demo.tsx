@@ -3,9 +3,10 @@ import {
     ChevronRight, ChevronLeft,
     ShieldCheck,
     Cpu, CheckCircle2,
-    RefreshCw, Zap, Settings,
-    Calendar, AlertTriangle, AlertCircle,
-    Lock, WifiOff, Wind, Clock
+    Zap, Settings,
+    AlertTriangle, AlertCircle,
+    WifiOff, Clock, Wind,
+    Bot, Brain, Thermometer, Users, Target
 } from 'lucide-react';
 
 // Types for the demo steps
@@ -92,219 +93,229 @@ export const Demo = () => {
     const currentTemp = Math.max(15, 21.5 - (windowOpen * 0.06));
     const heatLoss = (windowOpen * 1.5).toFixed(1);
 
+    const activeStep = steps.indexOf(stepId);
+
     const renderProblem = () => (
         <div className="demo-step problem-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--primary)', marginBottom: '16px' }}>
-                    What if BNE compliance took 2 minutes, not 2 months?
-                </h1>
-                <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                    Offline-first. Zero IT friction. Ready now.
-                </p>
+            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '16px' }}>The Detective Challenge</h2>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', padding: '10px 24px', background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border-light)' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>CASE FILE: <strong>Classroom 3B</strong></span>
+                </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', maxWidth: '1000px', margin: '0 auto' }}>
-                <div className="glass-card" style={{ padding: '40px', borderTop: '6px solid #ef4444' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: '#ef4444' }}>
-                        <AlertTriangle size={32} />
-                        <h3 style={{ fontWeight: 800, fontSize: '1.25rem', margin: 0 }}>The Bureaucratic Nightmare</h3>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', color: 'var(--text-secondary)' }}>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <span style={{ fontWeight: 800, color: 'var(--text-muted)', minWidth: '60px' }}>Day 1:</span>
-                            <span>Submit IT ticket for new software.</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '12px', opacity: 0.8 }}>
-                            <span style={{ fontWeight: 800, color: 'var(--text-muted)', minWidth: '60px' }}>Day 21:</span>
-                            <span>"Forwarded to data protection officer."</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '12px', opacity: 0.6 }}>
-                            <span style={{ fontWeight: 800, color: 'var(--text-muted)', minWidth: '60px' }}>Day 45:</span>
-                            <span>"Please provide DSGVO impact assessment."</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '12px', opacity: 0.8, color: '#ef4444', animation: 'pulse-red 2s infinite' }}>
-                            <span style={{ fontWeight: 800, minWidth: '60px' }}>Day 90:</span>
-                            <span style={{ fontWeight: 700 }}>STILL WAITING...</span>
-                        </div>
-                    </div>
-                    {/* Stuck Progress Bar */}
-                    <div style={{ marginTop: '32px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-muted)' }}>
-                            <span>PROCUREMENT PROGRESS</span>
-                            <span>0%</span>
-                        </div>
-                        <div style={{ width: '100%', height: '8px', background: 'var(--bg-elevated)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: '4%', height: '100%', background: '#ef4444', animation: 'shimmer-stuck 2s infinite linear' }} />
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#ef4444', marginTop: '4px', fontWeight: 700 }}>STUCK IN DATA PROTECTION REVIEW</div>
+            <div className="card" style={{ padding: '48px', background: 'white', borderRadius: '32px', border: '1px solid var(--border-light)', maxWidth: '900px', margin: '0 auto', position: 'relative', overflow: 'hidden' }}>
+
+                {/* Mystery Headline */}
+                <div style={{ marginBottom: '40px', borderLeft: '6px solid #ef4444', paddingLeft: '24px' }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', marginBottom: '8px', lineHeight: 1.4 }}>
+                        "Something happened in this room at exactly 10:15, 11:45, and 14:30. Can you solve it?"
                     </div>
                 </div>
 
-                <div className="glass-card" style={{ padding: '40px', borderTop: '6px solid var(--primary)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
-                        <Calendar size={32} />
-                        <h3 style={{ fontWeight: 800, fontSize: '1.25rem', margin: 0 }}>The Compliance Clock</h3>
-                    </div>
-                    <div style={{ textAlign: 'center', padding: '32px', background: 'var(--bg-elevated)', borderRadius: '24px', border: '1px solid var(--border-light)' }}>
-                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '12px', fontWeight: 800, letterSpacing: '0.05em' }}>BNE AUDIT DEADLINE: MARCH 2025</div>
-                        <div style={{ fontSize: '4.5rem', fontWeight: 900, color: '#ef4444', lineHeight: 1, marginBottom: '8px' }}>0 / 4</div>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase' }}>MODULES DOCUMENTED</div>
+                {/* Graph Visualization */}
+                <div style={{ position: 'relative', height: '300px', marginBottom: '40px' }}>
+                    <svg width="100%" height="100%" viewBox="0 0 1000 300" preserveAspectRatio="none">
+                        {/* Grid Lines */}
+                        {[0, 1, 2, 3].map(i => (
+                            <line key={i} x1="0" y1={i * 100} x2="1000" y2={i * 100} stroke="#f1f5f9" strokeWidth="2" />
+                        ))}
 
-                        <div style={{ marginTop: '24px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '12px', fontWeight: 900, fontSize: '0.9rem' }}>
-                            <Clock size={16} /> 47 DAYS REMAINING
-                        </div>
-                    </div>
-                    <p style={{ marginTop: '32px', fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                        Every tool you find needs WiFi credentials you don't have, or patient accounts that require months of parental consent forms.
-                    </p>
+                        {/* Mystery Data Line */}
+                        <path
+                            d="M0,250 L100,250 L150,150 L200,80 L250,120 L300,50 L400,250 L500,250 L550,140 L600,70 L650,110 L700,40 L800,250 L1000,250"
+                            fill="none"
+                            stroke="#94a3b8"
+                            strokeWidth="4"
+                            strokeLinejoin="round"
+                            strokeLinecap="round"
+                            opacity="0.5"
+                        />
+
+                        {/* Spikes Highlighted */}
+                        <circle cx="200" cy="80" r="12" fill="#ef4444" style={{ animation: 'pulse-red 2s infinite' }} />
+                        <text x="200" y="60" textAnchor="middle" fill="#ef4444" fontWeight="800" fontSize="20">????</text>
+
+                        <circle cx="600" cy="70" r="12" fill="#ef4444" style={{ animation: 'pulse-red 2s infinite 0.5s' }} />
+                        <text x="600" y="50" textAnchor="middle" fill="#ef4444" fontWeight="800" fontSize="20">????</text>
+
+                        <circle cx="700" cy="40" r="12" fill="#ef4444" style={{ animation: 'pulse-red 2s infinite 1.0s' }} />
+                        <text x="700" y="20" textAnchor="middle" fill="#ef4444" fontWeight="800" fontSize="20">????</text>
+                    </svg>
                 </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', marginTop: '32px' }}>
+                    <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '8px' }}>SUSPECT 1</div>
+                        <div style={{ fontWeight: 700 }}>A fire?</div>
+                    </div>
+                    <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '8px' }}>SUSPECT 2</div>
+                        <div style={{ fontWeight: 700 }}>Chemical leak?</div>
+                    </div>
+                    <div style={{ padding: '20px', background: '#fffbeb', borderRadius: '16px', border: '1px solid #fcd34d' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#d97706', marginBottom: '8px' }}>THE REAL CULPRIT</div>
+                        <div style={{ fontWeight: 900, color: '#b45309', fontSize: '1.1rem' }}>28 Ninth Graders.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: '40px', maxWidth: '700px', margin: '40px auto 0' }}>
+                <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', lineHeight: 1.6, fontWeight: 500 }}>
+                    "Your classroom isn't just a room. It's a <strong style={{ color: 'var(--primary)' }}>living, breathing system</strong>. And until now, it's been invisible."
+                </p>
             </div>
         </div>
     );
 
     const renderPromise = () => (
-        <div className="demo-step promise-step" style={{ textAlign: 'center', animation: 'fadeIn 0.5s ease-out' }}>
-            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '40px' }}>The 2-Minute Promise</h2>
+        <div className="demo-step promise-step" style={{ animation: 'fadeIn 0.5s ease-out', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '24px' }}>The Live Experiment</h2>
+            <div style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '40px', maxWidth: '800px', margin: '0 auto 40px' }}>
+                "Right now, this sensor reads <strong>450 ppm</strong> (outdoor air). <br />
+                Now watch what happens when we breathe."
+            </div>
 
-            <div style={{ position: 'relative', width: '600px', height: '350px', margin: '0 auto 40px', background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }}>
-                {connectionStatus === 'idle' && (
-                    <div style={{ textAlign: 'center', zIndex: 10 }}>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '24px', maxWidth: '400px' }}>
-                            Ready to prove "Zero IT Friction"? Start the connection flow.
-                        </div>
-                        <button className="btn btn-primary" onClick={startConnection} style={{ padding: '16px 40px', fontSize: '1.2rem', borderRadius: '16px' }}>
-                            <Zap size={24} style={{ marginRight: '12px' }} /> Start Discovery
+            <div className="card" style={{ maxWidth: '800px', margin: '0 auto', padding: '60px', borderRadius: '40px', background: 'radial-gradient(circle at center, #ffffff 0%, #f8fafc 100%)', boxShadow: 'inset 0 0 40px rgba(0,0,0,0.02)' }}>
+                {/* Live Number */}
+                <div style={{ fontSize: '8rem', fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: connectionStatus === 'connected' ? '#ef4444' : 'var(--primary)', lineHeight: 1, letterSpacing: '-0.05em', transition: 'color 0.5s' }}>
+                    {connectionStatus === 'connected' ? 538 : 452}
+                </div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-muted)', marginTop: '8px' }}>PPM CO₂</div>
+
+                {/* Simulation Button/State */}
+                <div style={{ marginTop: '48px', height: '80px' }}>
+                    {connectionStatus !== 'connected' ? (
+                        <button
+                            className="btn btn-primary"
+                            onClick={startConnection}
+                            style={{ padding: '20px 48px', fontSize: '1.2rem', borderRadius: '50px', boxShadow: '0 20px 40px -10px rgba(59, 130, 246, 0.4)' }}
+                        >
+                            <Wind size={24} style={{ marginRight: '12px' }} />
+                            START BREATHING
                         </button>
-                    </div>
-                )}
-
-                {(connectionStatus === 'searching' || connectionStatus === 'connecting') && (
-                    <div style={{ textAlign: 'center' }}>
-                        <div className="animate-spin" style={{ marginBottom: '32px' }}>
-                            <RefreshCw size={80} color="var(--primary)" />
-                        </div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>
-                            {connectionStatus === 'searching' ? 'Locating Hub...' : 'Encrypted Handshake...'}
-                        </div>
-                    </div>
-                )}
-
-                {connectionStatus === 'connected' && (
-                    <div style={{ textAlign: 'center', animation: 'victory-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
-                        <div style={{ background: '#10b981', width: '120px', height: '120px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: 'white', boxShadow: '0 0 40px rgba(16, 185, 129, 0.4)' }}>
-                            <CheckCircle2 size={64} />
-                        </div>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#10b981' }}>SYSTEM LIVE</div>
-                        <div style={{ background: '#d1fae5', color: '#065f46', padding: '8px 20px', borderRadius: '32px', display: 'inline-block', fontWeight: 800, marginTop: '16px', fontSize: '1.1rem' }}>
-                            1:32. PROMISE KEPT.
-                        </div>
-                    </div>
-                )}
-
-                <div style={{ position: 'absolute', bottom: '24px', left: '24px', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
-                    {connectionStatus === 'connected' && (
-                        <>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 800, color: '#10b981', animation: 'slideInRight 0.4s ease-out both' }}>
-                                <WifiOff size={16} /> NO WIFI REQUIRED
+                    ) : (
+                        <div style={{ animation: 'fadeIn 0.5s' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', padding: '12px 24px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '32px', fontWeight: 900 }}>
+                                <AlertCircle size={20} /> DETECTING RESPIRATION...
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 800, color: '#10b981', animation: 'slideInRight 0.4s ease-out 0.2s both' }}>
-                                <Lock size={16} /> NO STUDENT ACCOUNTS
+                            <div style={{ marginTop: '24px', fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                +86 ppm in 30 seconds
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 800, color: '#10b981', animation: 'slideInRight 0.4s ease-out 0.4s both' }}>
-                                <CheckCircle2 size={16} /> NO IT TICKET FILED
-                            </div>
-                        </>
+                        </div>
                     )}
                 </div>
             </div>
 
-            <div style={{ fontSize: '1.4rem', color: connectionStatus === 'connected' ? '#10b981' : 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto', fontWeight: 700, transition: 'all 0.3s' }}>
-                {connectionStatus === 'connected' ?
-                    "Done. No IT ticket filed. You're live." :
-                    "In less than two minutes, you have a fully functional BNE learning station."}
+            {/* Curriculum Callout */}
+            <div style={{ marginTop: '48px', display: 'inline-block', padding: '16px 32px', background: '#ecfdf5', borderRadius: '16px', border: '1px solid #a7f3d0' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#059669', marginBottom: '4px', textTransform: 'uppercase' }}>CURRICULUM LINK</div>
+                <div style={{ fontWeight: 900, color: '#064e3b', fontSize: '1rem' }}>Biology 9: Cellular Respiration (C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O)</div>
             </div>
         </div>
     );
 
     const renderPulse = () => (
         <div className="demo-step pulse-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
-                <div>
-                    <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '8px' }}>The Classroom Pulse</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Live Product Interface - Local Campus Network</p>
-                </div>
-                <div style={{ background: 'var(--bg-elevated)', padding: '12px 24px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px', border: '1px solid var(--border-light)' }}>
-                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#10b981', animation: 'pulse-glow 2s infinite' }} />
-                    <span style={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.05em' }}>HUB-01 STREAMING</span>
-                </div>
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '8px' }}>The Classroom Metabolism</h2>
+                <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Room 3B • Period 3 Physics • 28 Students</div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '32px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                    {/* Hero Metric: CO2 */}
-                    <div className="card" style={{ padding: '40px', background: 'white', position: 'relative', overflow: 'hidden', gridColumn: 'span 2', border: '2px solid var(--primary-light)', boxShadow: '0 20px 25px -5px rgba(59, 130, 246, 0.1)' }}>
-                        <div style={{ position: 'absolute', top: 0, right: 0, padding: '24px', opacity: 0.05, animation: 'pulse-slow 4s infinite' }}><Wind size={120} /></div>
-                        <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Air Quality (Health)</div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-                            <div style={{ fontSize: '5rem', fontWeight: 900, color: 'var(--primary)', lineHeight: 1, animation: 'pulse-soft 2s infinite' }}>842</div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-muted)' }}>PPM</div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', color: '#f59e0b', fontWeight: 900, marginTop: '16px' }}>
-                            <AlertCircle size={24} /> MODERATE • SPIKE RISK DETECTED
-                        </div>
-                    </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '24px', maxWidth: '1100px', margin: '0 auto' }}>
 
-                    <div className="card" style={{ padding: '24px', background: 'white', opacity: 0.6 }}>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>Temperature</div>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '4px' }}>20.4 <span style={{ fontSize: '1rem' }}>°C</span></div>
-                        <div style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 800 }}>OPTIMAL</div>
+                {/* Hero Metric: Respiration Rate */}
+                <div className="card" style={{ padding: '32px', background: 'white', gridColumn: 'span 4', border: '2px solid var(--primary-light)' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase' }}>Respiration Rate (CO₂)</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                        <div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#f59e0b' }}>842</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-muted)' }}>ppm</div>
                     </div>
-
-                    <div className="card" style={{ padding: '24px', background: 'white', opacity: 0.6 }}>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>Humidity</div>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '4px' }}>42 <span style={{ fontSize: '1rem' }}>%</span></div>
-                        <div style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 800 }}>IDEAL</div>
+                    <div style={{ marginTop: '16px', background: '#fef3c7', color: '#d97706', padding: '8px 16px', borderRadius: '12px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                        <AlertTriangle size={16} /> ELEVATED
+                    </div>
+                    <div style={{ marginTop: '24px', fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                        <span style={{ color: '#ef4444' }}>▲</span> Climbing 12 ppm/min
                     </div>
                 </div>
 
-                <div className="glass-card" style={{ padding: '40px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                    <div style={{ fontWeight: 900, fontSize: '1.4rem' }}>System Observations</div>
-                    <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', padding: '24px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '24px', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
-                        <div style={{ padding: '12px', background: '#ef4444', borderRadius: '12px', color: 'white' }}><AlertTriangle size={24} /></div>
-                        <div>
-                            <div style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: '8px', color: '#ef4444' }}>CRITICAL PATTERN</div>
-                            <div style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.5, fontWeight: 600 }}>CO2 regularly exceeds 1200ppm during P3 Physics. Ventilation protocol required.</div>
-                        </div>
+                {/* Thermal Comfort */}
+                <div className="card" style={{ padding: '32px', background: 'white', gridColumn: 'span 4' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase' }}>Thermal Comfort</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                        <div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#10b981' }}>20.4</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-muted)' }}>°C</div>
                     </div>
-
-                    <div style={{ marginTop: 'auto', padding: '24px', background: 'var(--bg-elevated)', borderRadius: '20px', border: '1px solid var(--border-light)', opacity: 0.5 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 800, marginBottom: '8px' }}>
-                            <Lock size={16} /> DATA SOVEREIGNTY
-                        </div>
-                        <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>Storage: Local Node Only</div>
+                    <div style={{ marginTop: '16px', background: '#ecfdf5', color: '#059669', padding: '8px 16px', borderRadius: '12px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                        <CheckCircle2 size={16} /> OPTIMAL
                     </div>
                 </div>
+
+                {/* Cognitive Load Indicator - THE HOOK */}
+                <div className="card" style={{ padding: '32px', background: '#1e293b', color: 'white', gridColumn: 'span 4', boxShadow: '0 20px 25px -5px rgba(15, 23, 42, 0.3)' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#94a3b8', marginBottom: '16px', textTransform: 'uppercase', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <Cpu size={16} /> Cognitive Load
+                    </div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', lineHeight: 1.4 }}>
+                        At <strong>842 ppm</strong>, research indicates:
+                    </div>
+                    <ul style={{ padding: 0, listStyle: 'none', space: 'y-4' }}>
+                        <li style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+                            <span style={{ fontWeight: 600, opacity: 0.8 }}>Decision Making</span>
+                            <span style={{ fontWeight: 900, color: '#f87171' }}>-11%</span>
+                        </li>
+                        <li style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ fontWeight: 600, opacity: 0.8 }}>Problem Solving</span>
+                            <span style={{ fontWeight: 900, color: '#f87171' }}>-15%</span>
+                        </li>
+                    </ul>
+                    <div style={{ marginTop: '24px', fontSize: '0.75rem', opacity: 0.5, fontStyle: 'italic' }}>
+                        Source: Harvard T.H. Chan School of Public Health
+                    </div>
+                </div>
+
+                {/* Real-time Insight */}
+                <div className="glass-card" style={{ gridColumn: 'span 12', padding: '24px', display: 'flex', alignItems: 'center', gap: '24px', borderLeft: '6px solid #f59e0b' }}>
+                    <div style={{ padding: '16px', background: '#FFF7ED', borderRadius: '50%', color: '#ea580c' }}>
+                        <Clock size={32} />
+                    </div>
+                    <div>
+                        <div style={{ fontWeight: 900, fontSize: '1.2rem', color: '#1e293b', marginBottom: '4px' }}>PREDICTION: 1,000 PPM IN 13 MINUTES</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '1rem', fontWeight: 600 }}>
+                            Current Load: 28 students × ~200ml CO₂/min = <span style={{ color: '#ea580c' }}>5.6 Liters/min</span> added.
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     );
 
     const renderFingerprint = () => (
         <div className="demo-step fingerprint-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '32px' }}>The Fingerprint</h2>
-            <div style={{ height: '400px', background: 'white', borderRadius: '32px', padding: '48px', border: '1px solid var(--border-light)', position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.02)' }}>
-                <svg width="100%" height="200" viewBox="0 0 1000 300" preserveAspectRatio="none" style={{ filter: 'drop-shadow(0 4px 6px rgba(59, 130, 246, 0.1))' }}>
+            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '16px' }}>Decode Your School's Rhythm</h2>
+                <div style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', fontWeight: 600 }}>The building is telling a story. Can your students read it?</div>
+            </div>
+
+            <div style={{ height: '420px', background: 'white', borderRadius: '32px', padding: '48px 48px 24px', border: '1px solid var(--border-light)', position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.02)' }}>
+                {/* Graph */}
+                <svg width="100%" height="220" viewBox="0 0 1000 300" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
                     <defs>
                         <linearGradient id="chartGradientHybrid" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="var(--primary)" />
-                            <stop offset="100%" stopColor="white" />
+                            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.1" />
+                            <stop offset="100%" stopColor="white" stopOpacity="0" />
                         </linearGradient>
+                        {/* Reveal Animation Clip */}
                         <clipPath id="reveal">
-                            <rect x="0" y="0" width="1000" height="300">
-                                <animate attributeName="width" from="0" to="1000" dur="2s" fill="freeze" />
+                            <rect x="0" y="-50" width="1000" height="400">
+                                <animate attributeName="width" from="0" to="1000" dur="2.5s" fill="freeze" />
                             </rect>
                         </clipPath>
                     </defs>
+
                     <g clipPath="url(#reveal)">
+                        {/* The Line */}
                         <path
                             d="M0,250 L100,250 L150,150 L200,80 L250,120 L300,50 L400,250 L500,250 L550,140 L600,70 L650,110 L700,40 L800,250 L1000,250"
                             fill="none"
@@ -313,80 +324,135 @@ export const Demo = () => {
                             strokeLinejoin="round"
                             strokeLinecap="round"
                         />
+                        {/* The Fill */}
                         <path
                             d="M0,250 L100,250 L150,150 L200,80 L250,120 L300,50 L400,250 L500,250 L550,140 L600,70 L650,110 L700,40 L800,250 L1000,250 V300 H0 Z"
                             fill="url(#chartGradientHybrid)"
-                            opacity="0.15"
                         />
-                        <circle cx="300" cy="50" r="8" fill="#ef4444" style={{ animation: 'pulse-marker 2s infinite 2s' }} />
-                        <circle cx="700" cy="40" r="8" fill="#ef4444" style={{ animation: 'pulse-marker 2s infinite 3s' }} />
+
+                        {/* Interactivity Markers - Always visible for context */}
+                        <line x1="300" y1="50" x2="300" y2="320" stroke="var(--primary)" strokeDasharray="4 4" opacity="0.4" />
+                        <line x1="450" y1="250" x2="450" y2="320" stroke="#10b981" strokeDasharray="4 4" opacity="0.6" />
+                        <line x1="700" y1="40" x2="700" y2="320" stroke="#f59e0b" strokeDasharray="4 4" opacity="0.6" />
                     </g>
                 </svg>
 
-                {/* Dramatic Label */}
-                <div style={{ position: 'absolute', top: '40px', left: '330px', background: '#ef4444', color: 'white', padding: '8px 20px', borderRadius: '16px', fontSize: '1rem', fontWeight: 900, boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.4)', animation: 'pop-in 0.4s both 1.5s' }}>
-                    1,240 PPM SPIKE
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, marginTop: '2px', opacity: 0.9 }}>P3 PHYSICS • 28 STUDENTS</div>
+                {/* Annotation Cards - Absolute Positioned */}
+                {/* 1. The Rush */}
+                <div style={{ position: 'absolute', top: '40px', left: '260px', animation: 'pop-in 0.4s both 1.8s' }}>
+                    <div className="glass-card" style={{ padding: '12px 20px', borderRadius: '16px', borderLeft: '4px solid var(--primary)', background: 'rgba(255,255,255,0.9)' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>MONDAY 10:15</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 900, marginBottom: '4px' }}>Peak Load</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Biology (28 students)</div>
+                    </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '64px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.05em' }}>
-                    <span>MONDAY 07:00</span>
-                    <span>MONDAY 14:00</span>
-                    <span>TUESDAY 07:00</span>
-                    <span>TUESDAY 14:00</span>
+                {/* 2. The Lunch Reset */}
+                <div style={{ position: 'absolute', bottom: '90px', left: '410px', animation: 'pop-in 0.4s both 2.2s' }}>
+                    <div className="glass-card" style={{ padding: '12px 20px', borderRadius: '16px', borderLeft: '4px solid #10b981', background: 'rgba(255,255,255,0.9)' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>13:00 - 14:00</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 900, marginBottom: '4px', color: '#059669' }}>The Reset</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Room Empty (Lunch)</div>
+                    </div>
                 </div>
-            </div>
 
-            <div style={{ marginTop: '32px', textAlign: 'center' }}>
-                <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                    "The graph isn't just data. It's the unique fingerprint of your school's behavior."
-                </p>
+                {/* 3. The Anomaly */}
+                <div style={{ position: 'absolute', top: '30px', left: '620px', animation: 'pop-in 0.4s both 2.6s' }}>
+                    <div className="glass-card" style={{ padding: '12px 20px', borderRadius: '16px', borderLeft: '4px solid #f59e0b', background: 'rgba(255,255,255,0.9)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>TUESDAY 14:30</div>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 900, background: '#fffbeb', color: '#d97706', padding: '2px 6px', borderRadius: '4px' }}>ANOMALY</div>
+                        </div>
+                        <div style={{ fontSize: '1rem', fontWeight: 900, marginBottom: '4px' }}>Theater Rehearsal</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>+15 Extra Students</div>
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '64px', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+                    <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)' }}>MONDAY</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 900 }}>Regular Cycle</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)' }}>TUESDAY</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 900 }}>Event Detection</div>
+                    </div>
+                </div>
             </div>
         </div>
     );
 
     const renderEvaluation = () => {
-        const highlightedText = aiText
-            .replace(/(1,240 ppm)/g, '<strong style="color:var(--primary)">$1</strong>')
-            .replace(/(30% harder)/g, '<strong style="color:#ef4444">$1</strong>')
-            .replace(/(Zielkonflikt)/g, '<strong style="color:#f59e0b">$1</strong>');
+        // Updated text for Socratic Scientist
+        const [socraticText, setSocraticText] = useState('');
+        const fullSocraticResponse = "That's a great observation! A 28-person class exhales about 5.6 Liters of CO2 per minute. If the room is sealed, how long until we hit the 1,500 ppm limit?";
+
+        useEffect(() => {
+            if (activeStep === 4) {
+                setSocraticText('');
+                let i = 0;
+                const interval = setInterval(() => {
+                    setSocraticText(fullSocraticResponse.slice(0, i));
+                    i++;
+                    if (i > fullSocraticResponse.length) clearInterval(interval);
+                }, 30); // Faster typing speed
+                return () => clearInterval(interval);
+            }
+        }, [activeStep]);
+
+        const highlightedText = socraticText
+            .replace(/(5.6 Liters)/g, '<strong style="color:var(--primary)">$1</strong>')
+            .replace(/(1,500 ppm)/g, '<strong style="color:#ef4444">$1</strong>');
+
 
         return (
             <div className="demo-step evaluation-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-                <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '40px', textAlign: 'center' }}>The Evaluation</h2>
-
-                    {/* Chat Experience */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                        {/* Student Question */}
-                        <div style={{ alignSelf: 'flex-start', maxWidth: '80%', animation: 'slideInRight 0.4s both' }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '4px', marginLeft: '12px' }}>STUDENT (GRADE 9)</div>
-                            <div style={{ background: 'var(--bg-elevated)', padding: '16px 24px', borderRadius: '4px 24px 24px 24px', border: '1px solid var(--border-light)', fontWeight: 600, fontSize: '1.1rem' }}>
-                                "Why did our classroom CO2 spike so high at 10:15 AM?"
-                            </div>
-                        </div>
-
-                        {/* AI Answer */}
-                        <div style={{ alignSelf: 'flex-end', maxWidth: '90%', animation: 'slideInRight 0.4s both 0.5s' }}>
-                            <div style={{ textAlign: 'right', fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '4px', marginRight: '12px' }}>SYSTEM AI TUTOR</div>
-                            <div className="glass-card" style={{ padding: '24px 32px', background: 'white', borderRadius: '24px 4px 24px 24px', border: '2px solid var(--primary-light)', boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.1)', position: 'relative' }}>
-                                <div
-                                    style={{ fontSize: '1.3rem', color: '#1e293b', lineHeight: 1.5, fontWeight: 500 }}
-                                    dangerouslySetInnerHTML={{ __html: highlightedText }}
-                                />
-                                {aiText.length < fullAiResponse.length && (
-                                    <span className="cursor" style={{ display: 'inline-block', width: '3px', height: '1.3rem', background: 'var(--primary)', marginLeft: '4px' }} />
-                                )}
-                            </div>
-                        </div>
+                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '16px' }}>The Socratic Scientist</h2>
+                        <div style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', fontWeight: 600 }}>The AI doesn't just give answers. It guides discovery.</div>
                     </div>
 
-                    <div style={{ marginTop: '64px', padding: '24px', background: 'rgba(59, 130, 246, 0.03)', borderRadius: '20px', border: '1px solid rgba(59, 130, 246, 0.1)', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontWeight: 900, color: 'var(--primary)', marginBottom: '8px', textTransform: 'uppercase', fontSize: '0.8rem' }}>
-                            <Cpu size={18} /> Deep Reasoning
+                    {/* Chat Interface */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
+                        {/* 1. Student Observation */}
+                        <div style={{ alignSelf: 'flex-start', maxWidth: '85%', animation: 'slideInRight 0.4s both' }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '8px', marginLeft: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>S</div>
+                                STUDENT (GRADE 9)
+                            </div>
+                            <div style={{ background: 'white', padding: '24px 32px', borderRadius: '4px 24px 24px 24px', border: '1px solid var(--border-light)', fontWeight: 600, fontSize: '1.2rem', color: '#1e293b', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                "The graph goes up really fast during 3rd period. Is that just us breathing?"
+                            </div>
                         </div>
-                        <div style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
-                            The AI connects abstract sensor data to human classroom behavior.
+
+                        {/* 2. AI Socratic Response */}
+                        <div style={{ alignSelf: 'flex-end', maxWidth: '90%', animation: 'slideInRight 0.4s both 0.6s' }}>
+                            <div style={{ textAlign: 'right', fontSize: '0.8rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '8px', marginRight: '12px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                                SYSTEM AI <Bot size={20} />
+                            </div>
+                            <div className="glass-card" style={{ padding: '32px', background: 'radial-gradient(circle at top right, #eff6ff 0%, #ffffff 100%)', borderRadius: '24px 4px 24px 24px', border: '2px solid var(--primary-light)', boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.1)', position: 'relative' }}>
+                                <div
+                                    style={{ fontSize: '1.35rem', color: '#1e293b', lineHeight: 1.5, fontWeight: 500, fontFamily: 'ui-serif, Georgia, Cambria, Times New Roman, Times, serif' }}
+                                    dangerouslySetInnerHTML={{ __html: highlightedText }}
+                                />
+                                {socraticText.length < fullSocraticResponse.length && (
+                                    <span style={{ display: 'inline-block', width: '8px', height: '1.35rem', background: 'var(--primary)', marginLeft: '4px', animation: 'blink 1s infinite' }} />
+                                )}
+                            </div>
+
+                            {/* Follow-up Prompts */}
+                            {socraticText.length === fullSocraticResponse.length && (
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', animation: 'fadeIn 0.5s' }}>
+                                    <button className="btn btn-sm" style={{ background: 'white', border: '1px solid var(--primary-light)', color: 'var(--primary)', borderRadius: '20px', padding: '8px 16px', fontSize: '0.9rem', fontWeight: 600 }}>
+                                        Calculate Volume
+                                    </button>
+                                    <button className="btn btn-sm" style={{ background: 'white', border: '1px solid var(--primary-light)', color: 'var(--primary)', borderRadius: '20px', padding: '8px 16px', fontSize: '0.9rem', fontWeight: 600 }}>
+                                        Check Ventilation Rates
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -459,57 +525,89 @@ export const Demo = () => {
 
     const renderAsk = () => (
         <div className="demo-step ask-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-                <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '16px' }}>The Ask</h2>
-                <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Closing the Validation Loop</p>
+            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '16px' }}>Join the Experiment</h2>
+                <div style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', fontWeight: 600 }}>We are looking for <strong>50 schools</strong> to validate this BNE station.</div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '48px', maxWidth: '1000px', margin: '0 auto' }}>
-                <div className="card" style={{ padding: '48px', background: 'var(--primary)', color: 'white', borderRadius: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', boxShadow: '0 25px 50px -12px rgba(59, 130, 246, 0.3)' }}>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 800, opacity: 0.9, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Investment</div>
-                    <div style={{ fontSize: '5rem', fontWeight: 900, marginBottom: '8px' }}>€799</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 800, opacity: 0.9 }}>One-time payment (GWG Limit)</div>
-                    <div style={{ marginTop: '32px', padding: '24px', background: 'rgba(255,255,255,0.1)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 900, fontSize: '1.1rem' }}>
-                            <ShieldCheck size={24} /> 24-Month Warranty
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', maxWidth: '1000px', margin: '0 auto' }}>
+
+                {/* 1. What You Get (Value) */}
+                <div className="card" style={{ padding: '40px', background: 'white', borderRadius: '32px', border: '1px solid var(--border-light)' }}>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Zap size={28} className="text-secondary" />
+                        The Pilot Package
+                    </h3>
+                    <ul style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: 0, listStyle: 'none' }}>
+                        <li style={{ display: 'flex', gap: '16px' }}>
+                            <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: '50%', background: '#dcfce7', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckCircle2 size={16} /></div>
+                            <div>
+                                <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>1x CO2 Discovery Node</div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Pre-calibrated, offline-ready.</div>
+                            </div>
+                        </li>
+                        <li style={{ display: 'flex', gap: '16px' }}>
+                            <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: '50%', background: '#dcfce7', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckCircle2 size={16} /></div>
+                            <div>
+                                <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>The "Science First" Curriculum</div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>5 modules: Biology, Physics, Math, Ethics.</div>
+                            </div>
+                        </li>
+                        <li style={{ display: 'flex', gap: '16px' }}>
+                            <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: '50%', background: '#dcfce7', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckCircle2 size={16} /></div>
+                            <div>
+                                <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>3 Years of Updates</div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>New experiments and firmware features.</div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <div style={{ marginTop: '40px', padding: '24px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>PARTICIPATION FEE</div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#1e293b' }}>€799</div>
+                            <div style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>/ classroom</div>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 700, marginTop: '8px' }}>✓ Qualifies as "Low Value Good" (GWG)</div>
+                    </div>
+                </div>
+
+
+                {/* 2. What We Need (Ask) */}
+                <div className="card" style={{ padding: '40px', background: '#1e1b4b', color: 'white', borderRadius: '32px' }}>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Users size={28} style={{ color: '#818cf8' }} />
+                        Research Requirements
+                    </h3>
+                    <div style={{ marginBottom: '32px', fontSize: '1.1rem', opacity: 0.9, lineHeight: 1.6 }}>
+                        We are validating this hardware for mass adoption. To join the pilot, we need:
+                    </div>
+
+                    <ul style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: 0, listStyle: 'none' }}>
+                        <li style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                            <div style={{ marginTop: '4px', flexShrink: 0, width: 20, height: 20, border: '2px solid #6366f1', borderRadius: '50%' }} />
+                            <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>One lead teacher (Physics/Bio).</div>
+                        </li>
+                        <li style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                            <div style={{ marginTop: '4px', flexShrink: 0, width: 20, height: 20, border: '2px solid #6366f1', borderRadius: '50%' }} />
+                            <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>Permission to run the "Ventilation Olympics."</div>
+                        </li>
+                        <li style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                            <div style={{ marginTop: '4px', flexShrink: 0, width: 20, height: 20, border: '2px solid #6366f1', borderRadius: '50%' }} />
+                            <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>A 15-minute feedback call after 4 weeks.</div>
+                        </li>
+                    </ul>
+
+                    <div style={{ marginTop: 'auto', paddingTop: '40px' }}>
+                        <button className="btn btn-primary" style={{ width: '100%', padding: '24px', fontSize: '1.3rem', borderRadius: '16px', background: '#4f46e5', border: 'none', color: 'white' }}>
+                            Apply for Pilot
+                        </button>
+                        <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.9rem', opacity: 0.6 }}>
+                            Only 14 spots remaining for Spring 2025.
                         </div>
                     </div>
                 </div>
 
-                <div className="glass-card" style={{ padding: '40px', borderRadius: '40px' }}>
-                    <h3 style={{ fontWeight: 900, fontSize: '1.4rem', marginBottom: '32px' }}>Next Steps for Validation</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {[
-                            "Would you trial this for 4 weeks in your Physics lab?",
-                            "Can you introduce us to the BNE Coordinator?",
-                            "Would you recommend this at the next Fachkonferenz?",
-                            "Are you willing to pay from the Fachschaft budget?"
-                        ].map((text, i) => (
-                            <label
-                                key={i}
-                                className="validation-item"
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '20px',
-                                    padding: '24px',
-                                    background: 'var(--bg-elevated)',
-                                    borderRadius: '24px',
-                                    cursor: 'pointer',
-                                    border: '1px solid var(--border-light)',
-                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                }}
-                            >
-                                <input type="checkbox" style={{ width: '24px', height: '24px', accentColor: 'var(--primary)' }} />
-                                <span style={{ fontSize: '1.1rem', fontWeight: 700 }}>{text}</span>
-                            </label>
-                        ))}
-                    </div>
-
-                    <div style={{ marginTop: '40px', textAlign: 'center', padding: '20px', background: '#fef2f2', color: '#ef4444', borderRadius: '16px', fontWeight: 900, border: '2px dashed #fecaca', animation: 'pulse-soft 2s infinite' }}>
-                        PRO-TIP: MAKE EYE CONTACT & WAIT.
-                    </div>
-                </div>
             </div>
         </div>
     );
