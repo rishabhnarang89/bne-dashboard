@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useValidationData, DEFAULT_QUESTIONS } from '../../hooks/useValidationData';
-import type { Teacher, TeacherStatus, Interview, InterviewQuestion, ContactMethod } from '../../hooks/useValidationData';
+import { useValidationData } from '../../hooks/useValidationData';
+import type { Teacher, TeacherStatus, Interview, InterviewQuestionResponse, LegacyInterviewQuestion, ContactMethod } from '../../hooks/useValidationData';
 import {
     Plus, Trash2, Edit3, Search,
     Clock, Star, MessageSquare,
@@ -64,7 +64,7 @@ export const Interviews = () => {
     type InterviewStage = 'setup' | 'active' | 'complete';
     const [interviewStage, setInterviewStage] = useState<InterviewStage>('setup');
     const [timerActive, setTimerActive] = useState(false);
-    const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>([...DEFAULT_QUESTIONS]);
+    const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestionResponse[]>([]);
     const [startTime, setStartTime] = useState<number | null>(null);
 
     // Delete confirmation
@@ -160,7 +160,7 @@ export const Interviews = () => {
         setInterviewStage('setup');
         setTimerActive(false);
         setStartTime(null);
-        setInterviewQuestions([...DEFAULT_QUESTIONS]);
+        setInterviewQuestions([]);
         setInterviewForm({
             status: 'completed',
             success: 'yes',
@@ -190,12 +190,25 @@ export const Interviews = () => {
         setEditingInterview(interview);
         setInterviewForm({ ...interview });
 
-        // Load existing questionnaire if available
+        // Start with empty responses
+        setInterviewQuestions([]);
+
+        // Migrate legacy questions if needed for the UI
         if (interview.questions && interview.questions.length > 0) {
-            setInterviewQuestions(interview.questions);
-        } else {
-            // If no questions, use defaults
-            setInterviewQuestions([...DEFAULT_QUESTIONS]);
+            const firstQ = interview.questions[0];
+            if ('question' in firstQ && !('questionText' in firstQ)) {
+                // It's legacy, convert for form
+                const legacy = interview.questions as LegacyInterviewQuestion[];
+                const migrated: InterviewQuestionResponse[] = legacy.map(q => ({
+                    questionId: q.id,
+                    questionText: q.question,
+                    answer: q.answer || '',
+                    remarks: q.remarks
+                }));
+                setInterviewQuestions(migrated);
+            } else {
+                setInterviewQuestions(interview.questions as InterviewQuestionResponse[]);
+            }
         }
 
         // Skip directly to complete stage for editing
@@ -570,7 +583,7 @@ export const Interviews = () => {
                                                         borderBottom: idx < interview.questions!.length - 1 ? '1px solid var(--border-default)' : 'none'
                                                     }}>
                                                         <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '6px', color: 'var(--text-primary)' }}>
-                                                            {q.question}
+                                                            {(q as any).questionText || (q as any).question}
                                                         </div>
                                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
                                                             {q.answer || <em style={{ color: 'var(--text-muted)' }}>No answer provided</em>}
@@ -936,7 +949,7 @@ export const Interviews = () => {
                                 }}
                             />
                             <QuestionnaireForm
-                                questions={interviewQuestions}
+                                existingAnswers={interviewQuestions}
                                 onChange={setInterviewQuestions}
                             />
                         </div>
