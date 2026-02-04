@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     ChevronRight, ChevronLeft,
     Clock, Wind,
@@ -17,6 +17,27 @@ export const Demo = () => {
     const [isTimerRunning, setIsTimerRunning] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'idle' | 'searching' | 'connecting' | 'connected'>('idle');
     const [windowOpen, setWindowOpen] = useState(0); // 0 to 100
+    const [socraticText, setSocraticText] = useState('');
+
+    const steps: DemoStepId[] = ['problem', 'promise', 'pulse', 'fingerprint', 'evaluation', 'conflict', 'ask'];
+    const activeStep = steps.indexOf(stepId);
+
+    const nextStep = useCallback(() => {
+        const currentIndex = steps.indexOf(stepId);
+        if (currentIndex < steps.length - 1) {
+            const next = steps[currentIndex + 1];
+            setStepId(next);
+            if (next === 'promise') setIsTimerRunning(true);
+        }
+    }, [stepId, steps]);
+
+    const prevStep = useCallback(() => {
+        const currentIndex = steps.indexOf(stepId);
+        if (currentIndex > 0) {
+            setStepId(steps[currentIndex - 1]);
+        }
+    }, [stepId, steps]);
+
 
 
 
@@ -42,25 +63,25 @@ export const Demo = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [stepId]);
 
+    const fullSocraticResponse = "That's a great observation! A 28-person class exhales about 5.6 Liters of CO2 per minute. If the room is sealed, how long until we hit the 1,500 ppm limit?";
 
-
-    const steps: DemoStepId[] = ['problem', 'promise', 'pulse', 'fingerprint', 'evaluation', 'conflict', 'ask'];
-
-    const nextStep = () => {
-        const currentIndex = steps.indexOf(stepId);
-        if (currentIndex < steps.length - 1) {
-            const next = steps[currentIndex + 1];
-            setStepId(next);
-            if (next === 'promise') setIsTimerRunning(true);
+    useEffect(() => {
+        if (activeStep === 4) {
+            setSocraticText('');
+            let i = 0;
+            const interval = setInterval(() => {
+                setSocraticText(fullSocraticResponse.slice(0, i));
+                i++;
+                if (i > fullSocraticResponse.length) clearInterval(interval);
+            }, 30); // Faster typing speed
+            return () => clearInterval(interval);
         }
-    };
+    }, [activeStep]);
 
-    const prevStep = () => {
-        const currentIndex = steps.indexOf(stepId);
-        if (currentIndex > 0) {
-            setStepId(steps[currentIndex - 1]);
-        }
-    };
+
+
+
+
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -78,7 +99,7 @@ export const Demo = () => {
     const currentTemp = Math.max(15, 21.5 - (windowOpen * 0.06));
     const heatLoss = (windowOpen * 1.5).toFixed(1);
 
-    const activeStep = steps.indexOf(stepId);
+
 
     const renderProblem = () => (
         <div className="demo-step problem-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
@@ -368,29 +389,12 @@ export const Demo = () => {
     );
 
     const renderEvaluation = () => {
-        // Updated text for Socratic Scientist
-        const [socraticText, setSocraticText] = useState('');
-        const fullSocraticResponse = "That's a great observation! A 28-person class exhales about 5.6 Liters of CO2 per minute. If the room is sealed, how long until we hit the 1,500 ppm limit?";
-
-        useEffect(() => {
-            if (activeStep === 4) {
-                setSocraticText('');
-                let i = 0;
-                const interval = setInterval(() => {
-                    setSocraticText(fullSocraticResponse.slice(0, i));
-                    i++;
-                    if (i > fullSocraticResponse.length) clearInterval(interval);
-                }, 30); // Faster typing speed
-                return () => clearInterval(interval);
-            }
-        }, [activeStep]);
-
         const highlightedText = socraticText
             .replace(/(5.6 Liters)/g, '<strong style="color:var(--primary)">$1</strong>')
             .replace(/(1,500 ppm)/g, '<strong style="color:#ef4444">$1</strong>');
 
-
         return (
+
             <div className="demo-step evaluation-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
                 <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: '40px' }}>
