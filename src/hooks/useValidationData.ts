@@ -64,12 +64,14 @@ export type QuestionType = 'text' | 'single_choice' | 'multiple_choice' | 'scale
 export interface QuestionOption {
     value: string;
     label: string;
+    labelEn?: string;
     nextQuestionId?: string;
 }
 
 export interface BranchingQuestion {
     id: string;
     question: string;
+    questionEn?: string;
     type: QuestionType;
     options?: QuestionOption[];
     nextQuestionId?: string;
@@ -88,6 +90,7 @@ export interface LegacyInterviewQuestion {
 export interface InterviewQuestionResponse {
     questionId: string;
     questionText: string;
+    questionEn?: string;
     answer: string | string[];
     remarks?: string;
 }
@@ -98,168 +101,630 @@ export interface InterviewQuestionResponse {
 export type InterviewData = InterviewQuestionResponse[] | LegacyInterviewQuestion[];
 
 export const BRANCHING_QUESTIONS: BranchingQuestion[] = [
-    // TEIL 1: AKTUELLE SITUATION
+    // SCREENER SECTION
     {
         id: 'q1',
-        question: 'Wie oft nutzen Sie digitale Messgeräte oder IoT-Kits (z.B. Arduino, senseBox) aktuell im Unterricht?',
+        question: 'Unterrichten Sie derzeit an einer weiterführenden Schule (Gymnasium, Realschule oder Gesamtschule) in Deutschland?',
+        questionEn: 'Do you currently teach at a secondary school (Gymnasium, Realschule, or Gesamtschule) in Germany?',
         type: 'single_choice',
         options: [
-            { value: 'never', label: 'Nie', nextQuestionId: 'q2' },
-            { value: 'rarely', label: 'Selten (1-2 mal im Jahr)', nextQuestionId: 'q2' },
-            { value: 'sometimes', label: 'Gelegentlich (jedes Semester)', nextQuestionId: 'q2' },
-            { value: 'often', label: 'Oft (regelmäßig)', nextQuestionId: 'q2' }
+            { value: 'yes', label: 'Ja', labelEn: 'Yes', nextQuestionId: 'q2' },
+            { value: 'no', label: 'Nein', labelEn: 'No', nextQuestionId: 'end_not_secondary' }
         ],
-        nextQuestionId: 'q2',
+        required: true,
         remarks: true
     },
     {
         id: 'q2',
-        question: 'Was sind die größten Hindernisse bei der Nutzung dieser Geräte?',
-        type: 'text',
-        nextQuestionId: 'q3',
+        question: 'Welche Fächer unterrichten Sie? (Alle zutreffenden auswählen)',
+        questionEn: 'Which subjects do you teach? (Select all that apply)',
+        type: 'multiple_choice',
+        options: [
+            { value: 'physics', label: 'Physik', labelEn: 'Physics' },
+            { value: 'biology', label: 'Biologie', labelEn: 'Biology' },
+            { value: 'chemistry', label: 'Chemie', labelEn: 'Chemistry' },
+            { value: 'geography', label: 'Geographie', labelEn: 'Geography' },
+            { value: 'other_mint', label: 'Andere MINT-Fächer', labelEn: 'Other MINT subjects' },
+            { value: 'none', label: 'Keines der oben genannten', labelEn: 'None of the above' }
+        ],
+        nextQuestionId: 'q3', // Default, but we'll handle multiple choice branching in component if needed or simplify
+        required: true,
         remarks: true
     },
     {
         id: 'q3',
-        question: 'Wie viel Vorbereitungszeit benötigen Sie typischerweise für eine IoT-Unterrichtsstunde?',
-        type: 'text',
-        nextQuestionId: 'q4',
+        question: 'Sind Sie an der Umsetzung von BNE (Bildung für nachhaltige Entwicklung) an Ihrer Schule beteiligt?',
+        questionEn: 'Are you involved in BNE (Bildung für nachhaltige Entwicklung) implementation at your school?',
+        type: 'single_choice',
+        options: [
+            { value: 'lead', label: 'Ja, ich leite BNE-Initiativen', labelEn: 'Yes, I lead BNE initiatives', nextQuestionId: 'q4' },
+            { value: 'teach', label: 'Ja, ich unterrichte BNE-bezogene Inhalte', labelEn: 'Yes, I teach BNE-related content', nextQuestionId: 'q4' },
+            { value: 'interested', label: 'Nein, aber ich bin interessiert', labelEn: "No, but I'm interested", nextQuestionId: 'q4' },
+            { value: 'not_relevant', label: 'Nein, nicht relevant für meine Rolle', labelEn: 'No, not relevant to my role', nextQuestionId: 'end_not_bne' }
+        ],
+        required: true,
         remarks: true
     },
 
-    // TEIL 2: BNE-MANDATE
+    // SECTION 1: PAIN POINT INTENSITY
     {
         id: 'q4',
-        question: 'Wie stark fühlen Sie sich durch die BNE-Vorgaben unter Druck gesetzt?',
-        type: 'scale',
-        options: [
-            { value: '1', label: 'Gar nicht (1)' },
-            { value: '2', label: '2' },
-            { value: '3', label: '3' },
-            { value: '4', label: '4' },
-            { value: '5', label: 'Sehr stark (5)' }
-        ],
-        nextQuestionId: 'q4_branch', // Example branching point
-        remarks: true
-    },
-    // EXAMPLE BRANCHING QUESTION
-    {
-        id: 'q4_branch',
-        question: 'Haben Sie bereits ein konkretes BNE-Projekt geplant?',
+        question: 'Wie viele BNE-Projekte mit Datenerfassung (Sensoren, Messungen, Experimente) haben Sie in den letzten 12 Monaten durchgeführt?',
+        questionEn: 'How many BNE projects involving data collection (sensors, measurements, experiments) have you run in the past 12 months?',
         type: 'single_choice',
         options: [
-            { value: 'yes', label: 'Ja', nextQuestionId: 'q4_details' },
-            { value: 'no', label: 'Nein', nextQuestionId: 'q5' }
+            { value: '0', label: '0', nextQuestionId: 'q4a' },
+            { value: '1-2', label: '1-2', nextQuestionId: 'q4b' },
+            { value: '3-5', label: '3-5', nextQuestionId: 'q4c' },
+            { value: '6+', label: '6+', nextQuestionId: 'q4c' }
         ],
+        required: true,
+        remarks: true
+    },
+
+    // BRANCH A: No projects
+    {
+        id: 'q4a',
+        question: 'Was hat Sie daran gehindert, datengesteuerte BNE-Projekte durchzuführen? (Ihre Top 3 Barrieren)',
+        questionEn: 'What stopped you from running data-driven BNE projects? (Rank your top 3 barriers)',
+        type: 'multiple_choice', // Simplified from ranking for now to fit schema
+        options: [
+            { value: 'equipment', label: 'Mangel an geeigneter Ausrüstung', labelEn: 'Lack of suitable equipment' },
+            { value: 'gdpr', label: 'DSGVO/Datenschutzbedenken', labelEn: 'GDPR/data protection concerns' },
+            { value: 'time', label: 'Unzureichende Vorbereitungszeit', labelEn: 'Insufficient preparation time' },
+            { value: 'curriculum', label: 'Mangel an Lehrplanmaterialien', labelEn: 'Lack of curriculum materials' },
+            { value: 'budget', label: 'Budgetbeschränkungen', labelEn: 'Budget constraints' },
+            { value: 'wifi', label: 'Unzuverlässiges WLAN/IT-Infrastruktur', labelEn: 'Unreliable WiFi/IT infrastructure' },
+            { value: 'training', label: 'Mangel an BNE-Schulung', labelEn: 'Lack of BNE training' },
+            { value: 'other', label: 'Sonstiges', labelEn: 'Other' }
+        ],
+        nextQuestionId: 'q4a_f',
+        required: true,
         remarks: true
     },
     {
-        id: 'q4_details',
-        question: 'Bitte beschreiben Sie das geplante Projekt kurz:',
+        id: 'q4a_f',
+        question: 'Können Sie einen konkreten Zeitpunkt beschreiben, an dem dies ein Projekt gestoppt hat?',
+        questionEn: 'Can you describe a specific time when this stopped a project?',
         type: 'text',
         nextQuestionId: 'q5',
         remarks: true
     },
 
+    // BRANCH B: 1-2 projects
     {
-        id: 'q5',
-        question: 'Welche BNE-Themen sind für Ihren Unterricht am relevantesten? (max. 3)',
+        id: 'q4b',
+        question: 'Sie haben 1-2 Projekte durchgeführt. Was hat Sie daran gehindert, mehr zu tun?',
+        questionEn: 'You ran 1-2 projects. What prevented you from doing more?',
         type: 'text',
-        nextQuestionId: 'q6',
+        nextQuestionId: 'q4b_f',
+        required: true,
         remarks: true
     },
     {
-        id: 'q6',
-        question: 'Wäre ein System hilfreich, das Klimadaten OHNE IT-Freigabe direkt im Klassenzimmer visualisiert?',
+        id: 'q4b_f',
+        question: 'Wenn diese Barrieren beseitigt würden, wie viele BNE-Projekte würden Sie realistischerweise pro Jahr durchführen?',
+        questionEn: 'If those barriers were removed, how many BNE projects would you realistically run per year?',
         type: 'single_choice',
         options: [
-            { value: 'yes', label: 'Ja' },
-            { value: 'no', label: 'Nein' },
-            { value: 'maybe', label: 'Vielleicht' }
+            { value: '3-4', label: '3-4', nextQuestionId: 'q5' },
+            { value: '5-6', label: '5-6', nextQuestionId: 'q5' },
+            { value: '7-10', label: '7-10', nextQuestionId: 'q5' },
+            { value: '10+', label: '10+', nextQuestionId: 'q5' }
         ],
+        required: true,
+        remarks: true
+    },
+
+    // BRANCH C: 3+ projects
+    {
+        id: 'q4c',
+        question: 'Großartig! Welche Ausrüstung/welchen Ansatz verwenden Sie derzeit für diese Projekte?',
+        questionEn: 'Great! What equipment/approach are you currently using for these projects?',
+        type: 'text',
+        nextQuestionId: 'q4c_f',
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q4c_f',
+        question: 'Was ist die größte Frustration mit Ihrem aktuellen Setup?',
+        questionEn: "What's the biggest frustration with your current setup?",
+        type: 'text',
+        nextQuestionId: 'q5',
+        required: true,
+        remarks: true
+    },
+    // SECTION 2: GDPR & IT INFRASTRUCTURE
+    {
+        id: 'q5',
+        question: 'Auf einer Skala von 1-5, wie sehr bremst die DSGVO/Datenschutzfreigabe Ihre Fähigkeit aus, digitale Tools für BNE zu nutzen?',
+        questionEn: 'On a scale of 1-5, how much does GDPR/data protection approval slow down your ability to use digital tools for BNE?',
+        type: 'scale',
+        options: [
+            { value: '1', label: 'Kein Hindernis (1)', labelEn: 'Not a barrier (1)', nextQuestionId: 'q5d' },
+            { value: '2', label: '2', nextQuestionId: 'q5d' },
+            { value: '3', label: '3', nextQuestionId: 'q5e' },
+            { value: '4', label: '4', nextQuestionId: 'q5e' },
+            { value: '5', label: 'Großes Hindernis (5)', labelEn: 'Major blocker (5)', nextQuestionId: 'q5f' }
+        ],
+        required: true,
+        remarks: true
+    },
+
+    // BRANCH D: Light GDPR concern (1-2)
+    {
+        id: 'q5d',
+        question: 'Da die DSGVO für Sie kein großes Thema ist, was IST Ihre größte IT/Infrastruktur-Herausforderung?',
+        questionEn: "Since GDPR isn't a major issue for you, what IS your biggest IT/infrastructure challenge?",
+        type: 'single_choice',
+        options: [
+            { value: 'wifi', label: 'Unzuverlässiges WLAN', labelEn: 'Unreliable WiFi', nextQuestionId: 'q6' },
+            { value: 'devices', label: 'Mangel an Geräten (Tablets/Laptops)', labelEn: 'Lack of devices', nextQuestionId: 'q6' },
+            { value: 'support', label: 'IT-Support nicht verfügbar', labelEn: 'IT support unavailable', nextQuestionId: 'q6' },
+            { value: 'outdated', label: 'Ausrüstung ist veraltet', labelEn: 'Equipment is outdated', nextQuestionId: 'q6' },
+            { value: 'not_it', label: 'Kein IT-Problem - andere Barrieren sind wichtiger', labelEn: 'Not an IT issue', nextQuestionId: 'q6' },
+            { value: 'other', label: 'Sonstiges', labelEn: 'Other', nextQuestionId: 'q6' }
+        ],
+        required: true,
+        remarks: true
+    },
+
+    // BRANCH E: Moderate GDPR concern (3-4)
+    {
+        id: 'q5e',
+        question: 'Wie lange dauert eine typische DSGVO-Freigabe an Ihrer Schule für ein neues digitales Tool?',
+        questionEn: 'How long does a typical GDPR approval take at your school for a new digital tool?',
+        type: 'single_choice',
+        options: [
+            { value: 'week', label: 'Weniger als 1 Woche', labelEn: 'Less than 1 week', nextQuestionId: 'q5e_f' },
+            { value: '1-4weeks', label: '1-4 Wochen', labelEn: '1-4 weeks', nextQuestionId: 'q5e_f' },
+            { value: '1-3months', label: '1-3 Monate', labelEn: '1-3 months', nextQuestionId: 'q5e_f' },
+            { value: '3+months', label: '3+ Monate / Nie genehmigt', labelEn: '3+ months / Never approved', nextQuestionId: 'q5e_f' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q5e_f',
+        question: 'Würde ein System, das ALLE Daten lokal speichert (kein Internet erforderlich), die DSGVO-Freigabe umgehen?',
+        questionEn: 'If a system stored ALL data locally (zero internet), would this bypass GDPR approval?',
+        type: 'single_choice',
+        options: [
+            { value: 'yes', label: 'Ja, definitiv', labelEn: 'Yes, definitely', nextQuestionId: 'q6' },
+            { value: 'probably', label: 'Wahrscheinlich - müsste bestätigt werden', labelEn: 'Probably', nextQuestionId: 'q6' },
+            { value: 'no', label: 'Nein, erfordert trotzdem eine Genehmigung', labelEn: 'No, still requires approval', nextQuestionId: 'q6' },
+            { value: 'unsure', label: 'Unsicher', labelEn: 'Unsure', nextQuestionId: 'q6' }
+        ],
+        required: true,
+        remarks: true
+    },
+
+    // BRANCH F: Critical GDPR blocker (5)
+    {
+        id: 'q5f',
+        question: 'Erzählen Sie uns von der letzten Situation, in der die DSGVO ein Projekt blockiert hat. Was ist passiert?',
+        questionEn: 'Tell us about the last time GDPR blocked a project. What happened?',
+        type: 'text',
+        nextQuestionId: 'q5f_f',
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q5f_f',
+        question: 'Wenn wir garantieren könnten, dass NULL Schülerdaten das Gerät verlassen, würde das alles ändern?',
+        questionEn: 'If we could guarantee ZERO student data leaves the device, would that change everything?',
+        type: 'single_choice',
+        options: [
+            { value: 'yes', label: 'Ja - das würde unser Problem lösen', labelEn: 'Yes - this would solve our problem', nextQuestionId: 'q6' },
+            { value: 'maybe', label: 'Vielleicht - bräuchte Bestätigung', labelEn: 'Maybe', nextQuestionId: 'q6' },
+            { value: 'no', label: 'Nein - wir haben andere größere Probleme', labelEn: 'No', nextQuestionId: 'q6' },
+            { value: 'unsure', label: 'Unsicher', labelEn: 'Unsure', nextQuestionId: 'q6' }
+        ],
+        required: true,
+        remarks: true
+    },
+
+    // SECTION 3: PREPARATION TIME
+    {
+        id: 'q6',
+        question: 'Für Ihr letztes BNE-Projekt (oder eines, das Sie geplant haben), wie viele Stunden hat die Vorbereitung gedauert?',
+        questionEn: 'For your most recent BNE project, how many hours did preparation take?',
+        type: 'single_choice',
+        options: [
+            { value: '0-2', label: '0-2 Stunden', labelEn: '0-2 hours', nextQuestionId: 'q6g' },
+            { value: '3-5', label: '3-5 Stunden', labelEn: '3-5 hours', nextQuestionId: 'q6h' },
+            { value: '6-10', label: '6-10 Stunden', labelEn: '6-10 hours', nextQuestionId: 'q6h' },
+            { value: '11-20', label: '11-20 Stunden', labelEn: '11-20 hours', nextQuestionId: 'q6i' },
+            { value: '20+', label: '20+ Stunden', labelEn: '20+ hours', nextQuestionId: 'q6i' },
+            { value: 'none', label: 'Bisher noch keins gemacht', labelEn: "Haven't done one yet", nextQuestionId: 'q6j' }
+        ],
+        required: true,
+        remarks: true
+    },
+
+    // BRANCH G: Efficient (0-2 hours)
+    {
+        id: 'q6g',
+        question: 'Beeindruckend! Was ist Ihr Geheimnis? Welche Ressourcen machen die Vorbereitung für Sie schnell?',
+        questionEn: "Impressive! What's your secret? What resources make prep fast for you?",
+        type: 'text',
         nextQuestionId: 'q7',
         remarks: true
     },
 
-    // TEIL 3: "SOVEREIGN" LÖSUNG
+    // BRANCH H: Moderate (3-10 hours)
+    {
+        id: 'q6h',
+        question: 'Was hat bei der Vorbereitung am meisten Zeit in Anspruch genommen?',
+        questionEn: 'What took the most time during prep?',
+        type: 'single_choice',
+        options: [
+            { value: 'equipment', label: 'Ausrüstung finden/einrichten', labelEn: 'Finding/setting up equipment', nextQuestionId: 'q7' },
+            { value: 'worksheets', label: 'Arbeitsblätter/Unterrichtspläne erstellen', labelEn: 'Creating worksheets', nextQuestionId: 'q7' },
+            { value: 'curriculum', label: 'Verknüpfung mit Lehrplanstandards', labelEn: 'Linking to curriculum', nextQuestionId: 'q7' },
+            { value: 'testing', label: 'Ausrüstung vorher testen', labelEn: 'Testing equipment', nextQuestionId: 'q7' },
+            { value: 'approvals', label: 'Genehmigungen einholen', labelEn: 'Getting approvals', nextQuestionId: 'q7' },
+            { value: 'other', label: 'Sonstiges', labelEn: 'Other', nextQuestionId: 'q7' }
+        ],
+        required: true,
+        remarks: true
+    },
+
+    // BRANCH I: Heavy (11+ hours)
+    {
+        id: 'q6i',
+        question: 'Das ist eine beträchtliche Zeit! Was genau hat so lange gedauert?',
+        questionEn: "That's significant time! What specifically took so long?",
+        type: 'text',
+        nextQuestionId: 'q6i_f',
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q6i_f',
+        question: 'Wenn fertige Unterrichtsmodule die Vorbereitungszeit auf 2-3 Stunden verkürzen könnten, was wäre das Ihrer Fachschaft wert?',
+        questionEn: 'If pre-made curriculum modules could cut prep to 2-3 hours, what would that be worth to your department?',
+        type: 'single_choice',
+        options: [
+            { value: '0', label: '€0 - nicht wert zu zahlen', labelEn: '€0 - not worth paying for', nextQuestionId: 'q7' },
+            { value: '50-150', label: '€50-150 pro Modul', labelEn: '€50-150 per module', nextQuestionId: 'q7' },
+            { value: '200-400', label: '€200-400 pro Modul', labelEn: '€200-400 per module', nextQuestionId: 'q7' },
+            { value: '500+', label: '€500+ pro Modul', labelEn: '€500+ per module', nextQuestionId: 'q7' },
+            { value: 'unsure', label: 'Unsicher', labelEn: 'Unsure', nextQuestionId: 'q7' }
+        ],
+        required: true,
+        remarks: true
+    },
+
+    // BRANCH J: Haven't done one
+    {
+        id: 'q6j',
+        question: 'Wenn Sie morgen ein BNE-Projekt planen würden, wie hoch schätzen Sie die Vorbereitungszeit ein?',
+        questionEn: 'If you were to plan a BNE project tomorrow, estimate the prep time:',
+        type: 'single_choice',
+        options: [
+            { value: '2-5', label: '2-5 Stunden', labelEn: '2-5 hours', nextQuestionId: 'q6j_f' },
+            { value: '6-10', label: '6-10 Stunden', labelEn: '6-10 hours', nextQuestionId: 'q6j_f' },
+            { value: '10-20', label: '10-20 Stunden', labelEn: '10-20 hours', nextQuestionId: 'q6j_f' },
+            { value: '20+', label: '20+ Stunden', labelEn: '20+ hours', nextQuestionId: 'q6j_f' },
+            { value: 'no_idea', label: 'Keine Ahnung - scheint überwältigend', labelEn: 'No idea', nextQuestionId: 'q6j_f' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q6j_f',
+        question: 'Was bereitet Ihnen bei der Vorbereitung am meisten Sorgen?',
+        questionEn: 'What worries you most about the prep?',
+        type: 'text',
+        nextQuestionId: 'q7',
+        remarks: true
+    },
+
+    // TEIL 4: BUDGET & COMMITMENT
+    // SECTION 4: WHOLE SCHOOL APPROACH
     {
         id: 'q7',
-        question: 'Wie wichtig ist es Ihnen, dass Schülerdaten das Schulgebäude niemals verlassen (Offline-Betrieb)?',
-        type: 'scale',
+        question: 'Wie oft führen (oder möchten) Sie BNE-Umweltdaten-Projekte außerhalb des Klassenzimmers durch (Garten, Kantine, Heizungsraum usw.)?',
+        questionEn: 'How often do you (or would you like to) collect environmental data OUTSIDE the classroom?',
+        type: 'single_choice',
         options: [
-            { value: '1', label: 'Unwichtig (1)' },
-            { value: '3', label: 'Neutral (3)' },
-            { value: '5', label: 'Sehr wichtig (5)' }
+            { value: 'regular', label: 'Regelmäßig (3+ mal/Jahr)', labelEn: 'Regularly (3+ times/year)', nextQuestionId: 'q7k' },
+            { value: 'rare', label: '1-2 mal versucht', labelEn: "1-2 times", nextQuestionId: 'q7l' },
+            { value: 'want_to', label: 'Bisher nie, möchte es aber', labelEn: "Never, but want to", nextQuestionId: 'q7m' },
+            { value: 'not_interested', label: 'Nicht interessiert / nicht relevant', labelEn: 'Not interested', nextQuestionId: 'q8' }
         ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q7k',
+        question: 'Welche Ausrüstung verwenden Sie für Außenmessungen?',
+        questionEn: 'What equipment do you use for outdoor monitoring?',
+        type: 'text',
+        nextQuestionId: 'q7k_f',
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q7k_f',
+        question: 'Was ist das Hauptproblem, das bei diesen Außenprojekten auftritt?',
+        questionEn: "What's the #1 thing that fails in these outdoor projects?",
+        type: 'single_choice',
+        options: [
+            { value: 'battery', label: 'Akku leer', labelEn: 'Battery dies', nextQuestionId: 'q8' },
+            { value: 'weather', label: 'Nicht wetterfest', labelEn: 'Not weatherproof', nextQuestionId: 'q8' },
+            { value: 'stolen', label: 'Diebstahl/Beschädigung', labelEn: 'Stolen/damaged', nextQuestionId: 'q8' },
+            { value: 'wifi', label: 'WLAN-Reichweite', labelEn: 'WiFi reach', nextQuestionId: 'q8' },
+            { value: 'data', label: 'Daten gehen verloren', labelEn: 'Data lost', nextQuestionId: 'q8' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q7l',
+        question: 'Was hindert Sie daran, dies öfter zu tun?',
+        questionEn: 'What prevents you from doing this more often?',
+        type: 'single_choice',
+        options: [
+            { value: 'equipment', label: 'Ausrüstung nicht außentauglich', labelEn: 'Equipment not suitable', nextQuestionId: 'q8' },
+            { value: 'battery', label: 'Akku/Stromprobleme', labelEn: 'Battery issues', nextQuestionId: 'q8' },
+            { value: 'theft', label: 'Diebstahlrisiko', labelEn: 'Theft risk', nextQuestionId: 'q8' },
+            { value: 'complex', label: 'Zu kompliziert einzurichten', labelEn: 'Too complex', nextQuestionId: 'q8' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q7m',
+        question: 'Wenn Sie robuste Sensoren hätten (6 Monate Akku, wetterfest), welches Projekt würden Sie durchführen?',
+        questionEn: 'If you had ruggedized sensors (6-month battery), what specific project would you run?',
+        type: 'text',
         nextQuestionId: 'q8',
         remarks: true
     },
+
+    // SECTION 5: CURRENT TOOLS & COMPETITIVE GAP
     {
         id: 'q8',
-        question: 'Würden Sie ein System bevorzugen, das per QR-Code sofort einsatzbereit ist (< 60s Setup)?',
+        question: 'Nutzen Sie derzeit eines dieser Tools für MINT/BNE-Projekte?',
+        questionEn: 'Do you currently use any of these tools?',
         type: 'single_choice',
         options: [
-            { value: 'yes', label: 'Ja' },
-            { value: 'no', label: 'Nein' }
+            { value: 'micro', label: 'Calliope / Arduino / Micro:bit', labelEn: 'Microcontrollers', nextQuestionId: 'q8n' },
+            { value: 'lab', label: 'CASSY / Vernier / Profigeräte', labelEn: 'Lab equipment', nextQuestionId: 'q8o' },
+            { value: 'diy', label: 'DIY/Selbstbausensoren', labelEn: 'DIY sensors', nextQuestionId: 'q8p' },
+            { value: 'none', label: 'Keines der oben genannten', labelEn: 'None of the above', nextQuestionId: 'q8q' }
         ],
-        nextQuestionId: 'q9',
+        required: true,
         remarks: true
     },
     {
+        id: 'q8n',
+        question: 'Sind Microcontroller wie Calliope für die Sekundarstufe ausreichend oder fehlt es an Präzision?',
+        questionEn: 'Are microcontrollers like Calliope sufficient, or do they lack precision?',
+        type: 'single_choice',
+        options: [
+            { value: 'sufficient', label: 'Ausreichend für unsere Bedürfnisse', labelEn: 'Sufficient', nextQuestionId: 'q9' },
+            { value: 'too_simple', label: 'Zu einfach - brauchen mehr Präzision', labelEn: 'Too simple', nextQuestionId: 'q9' },
+            { value: 'too_complex', label: 'Zu komplex für Schüler', labelEn: 'Too complex', nextQuestionId: 'q9' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q8o',
+        question: 'Wie gut lässt sich Ihre Laborausrüstung (CASSY/Vernier) in den BNE-Lehrplan integrieren?',
+        questionEn: 'How well does your lab equipment integrate with BNE curriculum?',
+        type: 'single_choice',
+        options: [
+            { value: 'great', label: 'Funktioniert super', labelEn: 'Works great', nextQuestionId: 'q9' },
+            { value: 'adaptation', label: 'Erfordert große Anpassungen', labelEn: 'Major adaptation', nextQuestionId: 'q9' },
+            { value: 'poor_fit', label: 'Passt schlecht zu BNE', labelEn: 'Poor fit', nextQuestionId: 'q9' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q8p',
+        question: 'Was funktioniert gut und was ist frustrierend an DIY-Sensoren?',
+        questionEn: "What's working and what's frustrating about DIY sensors?",
+        type: 'text',
+        nextQuestionId: 'q9',
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q8q',
+        question: 'Was ist der Hauptgrund, warum Sie keine digitalen Messgeräte für BNE nutzen?',
+        questionEn: "Main reason you don't use digital measurement tools for BNE?",
+        type: 'single_choice',
+        options: [
+            { value: 'no_equipment', label: 'Haben keine Ausrüstung', labelEn: 'No equipment', nextQuestionId: 'q9' },
+            { value: 'expensive', label: 'Zu teuer', labelEn: 'Too expensive', nextQuestionId: 'q9' },
+            { value: 'complex', label: 'Zu komplex in der Anwendung', labelEn: 'Too complex', nextQuestionId: 'q9' }
+        ],
+        required: true,
+        remarks: true
+    },
+
+    // SECTION 6: BUDGET & PROCUREMENT
+    {
         id: 'q9',
-        question: 'Welche Features wären für Sie am wichtigsten? (Ranking)',
+        question: 'Wenn eine BNE-Sensorstation 750 € kostet, kann Ihre Fachschaft den Kauf direkt genehmigen?',
+        questionEn: 'If a BNE sensor station costs €750, can your department approve directly?',
+        type: 'single_choice',
+        options: [
+            { value: 'yes_direct', label: 'Ja, meine Fachschaft kann direkt entscheiden', labelEn: 'Yes, direct approval', nextQuestionId: 'q9r' },
+            { value: 'principal', label: 'Benötigt Schulleitungs-Freigabe', labelEn: 'Need principal approval', nextQuestionId: 'q9s' },
+            { value: 'municipal', label: 'Erfordert kommunales Ausschreibungsverfahren', labelEn: 'Municipal tender', nextQuestionId: 'q9t' },
+            { value: 'unsure', label: 'Unsicher', labelEn: 'Unsure', nextQuestionId: 'q9u' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q9r',
+        question: 'Wie hoch ist das jährliche Ausrüstungsbudget Ihrer Fachschaft?',
+        questionEn: "What's your department's annual equipment budget?",
+        type: 'single_choice',
+        options: [
+            { value: 'under_1k', label: 'Unter 1.000 €', labelEn: 'Under €1,000', nextQuestionId: 'q10' },
+            { value: '1k-3k', label: '1.000 € - 3.000 €', labelEn: '€1,000-3,000', nextQuestionId: 'q10' },
+            { value: '3k+', label: 'Über 3.000 €', labelEn: '€3,000+', nextQuestionId: 'q10' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q9s',
+        question: 'Was würde die Schulleitung eher zum Ja oder zum Nein bewegen?',
+        questionEn: 'What would make the principal say yes vs. no?',
+        type: 'text',
+        nextQuestionId: 'q10',
+        remarks: true
+    },
+    {
+        id: 'q9t',
+        question: 'Ab welchem Preis könnten Sie das Tender-Verfahren umgehen?',
+        questionEn: 'At what price could you avoid the tender process?',
+        type: 'single_choice',
+        options: [
+            { value: '500', label: 'Unter 500 €', nextQuestionId: 'q10' },
+            { value: '800', label: 'Unter 800 €', nextQuestionId: 'q10' },
+            { value: '1000', label: 'Unter 1.000 €', nextQuestionId: 'q10' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q9u',
+        question: 'Wen würden Sie beim Kauf neuer BNE-Ausrüstung fragen?',
+        questionEn: 'Who would you ask about buying new equipment?',
         type: 'text',
         nextQuestionId: 'q10',
         remarks: true
     },
 
-    // TEIL 4: BUDGET & COMMITMENT
+    // SECTION 7: SOLUTION VALIDATION
     {
         id: 'q10',
-        question: 'Über welches Budget verfügen Sie für solche Anschaffungen pro Klassensatz?',
+        question: 'KONZEPT-TEST: Robustes Offline-System, 6 Monate Akku, 750 €. Würde das Ihre Probleme lösen?',
+        questionEn: 'CONCEPT TEST: Rugged offline system, 6mo battery, €750. Does this solve your problems?',
+        type: 'scale',
+        options: [
+            { value: '1', label: 'Nicht nützlich (1)', nextQuestionId: 'q10v' },
+            { value: '2', label: '2', nextQuestionId: 'q10v' },
+            { value: '3', label: 'Mittel (3)', nextQuestionId: 'q10w' },
+            { value: '4', label: '4', nextQuestionId: 'q10x' },
+            { value: '5', label: 'Genau das, was wir brauchen (5)', nextQuestionId: 'q10x' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q10v',
+        question: 'Was müsste sich ändern, damit das für Sie wertvoll ist?',
+        questionEn: 'What would need to change to be valuable?',
         type: 'text',
         nextQuestionId: 'q11',
         remarks: true
     },
     {
+        id: 'q10w',
+        question: 'Was hält Sie von einer 4 oder 5 ab?',
+        questionEn: "What's holding you back from a 4 or 5?",
+        type: 'single_choice',
+        options: [
+            { value: 'price', label: 'Preis zu hoch', labelEn: 'Price too high', nextQuestionId: 'q11' },
+            { value: 'features', label: 'Fehlende Features', labelEn: 'Missing features', nextQuestionId: 'q11' },
+            { value: 'curriculum', label: 'Unklarer Lehrplan-Fit', labelEn: 'Unclear curriculum fit', nextQuestionId: 'q11' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q10x',
+        question: 'Wenn dies heute verfügbar wäre, würden Sie es dieses Schuljahr kaufen?',
+        questionEn: 'If available today, would you buy it this school year?',
+        type: 'single_choice',
+        options: [
+            { value: 'yes', label: 'Ja, definitiv', labelEn: 'Yes, definitely', nextQuestionId: 'q10x_f' },
+            { value: 'no', label: 'Nein', labelEn: 'No', nextQuestionId: 'q10x_f' }
+        ],
+        required: true,
+        remarks: true
+    },
+    {
+        id: 'q10x_f',
+        question: 'Wären Sie an einer Pilotphase im nächsten Halbjahr interessiert?',
+        questionEn: 'Interested in a pilot next semester?',
+        type: 'single_choice',
+        options: [
+            { value: 'yes', label: 'Ja!', nextQuestionId: 'q11' },
+            { value: 'no', label: 'Nein danke', nextQuestionId: 'q11' }
+        ],
+        required: true,
+        remarks: true
+    },
+
+    // SECTION 8: FINAL CONTEXT
+    {
         id: 'q11',
-        question: 'Was wäre ein realistischer Preis pro Klassensatz (6-8 Sensoren + Hub)?',
-        type: 'text',
-        nextQuestionId: 'q12',
+        question: 'Wie dringend ist die Verbesserung der BNE-Umsetzung an Ihrer Schule?',
+        questionEn: 'How urgent is improving BNE at your school?',
+        type: 'single_choice',
+        options: [
+            { value: 'critical', label: 'Kritisch - Inspektionen stehen bevor', labelEn: 'Critical', nextQuestionId: 'q12' },
+            { value: 'high', label: 'Hohe Priorität - Schulentwicklungsplan', labelEn: 'High', nextQuestionId: 'q12' },
+            { value: 'important', label: 'Wichtig, aber nicht dringend', labelEn: 'Important', nextQuestionId: 'q12' }
+        ],
+        required: true,
         remarks: true
     },
     {
         id: 'q12',
-        question: 'Wären Sie bereit, als Pilotschule an einer 4-wöchigen Testphase teilzunehmen?',
-        type: 'single_choice',
-        options: [
-            { value: 'yes', label: 'Ja', nextQuestionId: 'q13' },
-            { value: 'no', label: 'Nein', nextQuestionId: 'q14' } // Skip contact details if no
-        ],
+        question: 'Gibt es noch etwas Wichtiges, das ich nicht gefragt habe?',
+        questionEn: "Anything else I should have asked?",
+        type: 'text',
         nextQuestionId: 'q13',
         remarks: true
     },
     {
         id: 'q13',
-        question: 'Bitte hinterlassen Sie Ihre Kontaktdaten für den Pilot:',
-        type: 'text',
-        nextQuestionId: 'q14',
+        question: 'Können wir Sie für ein kurzes Follow-up erneut kontaktieren?',
+        questionEn: 'Can we follow up with you?',
+        type: 'single_choice',
+        options: [
+            { value: 'yes', label: 'Ja', nextQuestionId: 'end_thank_you' },
+            { value: 'no', label: 'Nein', nextQuestionId: 'end_thank_you' }
+        ],
+        required: true,
         remarks: true
     },
 
-    // TEIL 5: OFFENES FEEDBACK
+    // END SCREENS
     {
-        id: 'q14',
-        question: 'Was würde Sie davon abhalten, dieses System zu nutzen?',
+        id: 'end_not_secondary',
+        question: 'Vielen Dank! Diese Umfrage konzentriert sich auf Lehrkräfte an weiterführenden Schulen.',
+        questionEn: 'Thank you! This survey is focused on secondary school teachers.',
         type: 'text',
-        nextQuestionId: 'q15',
-        remarks: true
+        remarks: false
     },
     {
-        id: 'q15',
-        question: 'Welche zusätzlichen Features wären für Sie wichtig?',
+        id: 'end_not_bne',
+        question: 'Vielen Dank für Ihre Zeit! Diese Umfrage ist speziell für Lehrkräfte in der BNE-Umsetzung.',
+        questionEn: 'Thank you! This survey is for teachers in BNE implementation.',
         type: 'text',
-        remarks: true
+        remarks: false
+    },
+    {
+        id: 'end_thank_you',
+        question: 'Herzlichen Dank! Ihre Erkenntnisse helfen uns sehr beim Aufbau von BNE-Box.',
+        questionEn: 'Thank you! Your insights help us build BNE-Box.',
+        type: 'text',
+        remarks: false
     }
 ];
 

@@ -43,6 +43,7 @@ export const QuestionnaireForm = ({ existingAnswers = [], onChange }: Questionna
     const currentAnswer = answers[currentQuestionId] || {
         questionId: currentQuestionId,
         questionText: currentQuestion.question,
+        questionEn: currentQuestion.questionEn,
         answer: '',
         remarks: ''
     };
@@ -52,6 +53,8 @@ export const QuestionnaireForm = ({ existingAnswers = [], onChange }: Questionna
             ...answers,
             [currentQuestionId]: {
                 ...currentAnswer,
+                questionText: currentQuestion.question, // Ensure text is up to date
+                questionEn: currentQuestion.questionEn,
                 answer: value
             }
         };
@@ -66,6 +69,8 @@ export const QuestionnaireForm = ({ existingAnswers = [], onChange }: Questionna
             ...answers,
             [currentQuestionId]: {
                 ...currentAnswer,
+                questionText: currentQuestion.question,
+                questionEn: currentQuestion.questionEn,
                 remarks: value
             }
         };
@@ -133,7 +138,58 @@ export const QuestionnaireForm = ({ existingAnswers = [], onChange }: Questionna
                                     onChange={(e) => handleAnswerChange(e.target.value)}
                                     style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
                                 />
-                                <span style={{ fontSize: '0.95rem' }}>{opt.label}</span>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{opt.label}</span>
+                                    {opt.labelEn && (
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                            {opt.labelEn}
+                                        </span>
+                                    )}
+                                </div>
+                            </label>
+                        ))}
+                    </div>
+                );
+
+            case 'multiple_choice':
+                const selectedAnswers = Array.isArray(currentAnswer.answer) ? currentAnswer.answer : [];
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {currentQuestion.options?.map(opt => (
+                            <label
+                                key={opt.value}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border-default)',
+                                    cursor: 'pointer',
+                                    background: selectedAnswers.includes(opt.value) ? 'var(--primary-light)' : 'var(--bg-card)',
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                <input
+                                    type="checkbox"
+                                    value={opt.value}
+                                    checked={selectedAnswers.includes(opt.value)}
+                                    onChange={(e) => {
+                                        const newValue = e.target.checked
+                                            ? [...selectedAnswers, opt.value]
+                                            : selectedAnswers.filter(v => v !== opt.value);
+                                        handleAnswerChange(newValue);
+                                    }}
+                                    style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
+                                />
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{opt.label}</span>
+                                    {opt.labelEn && (
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                            {opt.labelEn}
+                                        </span>
+                                    )}
+                                </div>
                             </label>
                         ))}
                     </div>
@@ -148,7 +204,7 @@ export const QuestionnaireForm = ({ existingAnswers = [], onChange }: Questionna
                         value={currentAnswer.answer as string || ''}
                         onChange={e => handleAnswerChange(e.target.value)}
                         rows={4}
-                        style={{ fontSize: '0.95rem', width: '100%' }}
+                        style={{ fontSize: '0.95rem', width: '100%', background: 'var(--bg-card)' }}
                     />
                 );
         }
@@ -158,72 +214,76 @@ export const QuestionnaireForm = ({ existingAnswers = [], onChange }: Questionna
         (!currentQuestion.options || !currentQuestion.options.some(o => o.nextQuestionId));
 
     return (
-        <div>
-            {/* Progress Bar (Linear estimation) */}
-            <div style={{ marginBottom: '20px' }}>
+        <div className="branching-questionnaire">
+            {/* Progress Bar (Estimated) */}
+            <div style={{ marginBottom: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                        Current Queue: {history.length + 1}
-                    </span>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        Question {currentQuestionId}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)' }}>
+                            Step {history.length + 1}
+                        </span>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                            • {currentQuestionId.toUpperCase()}
+                        </span>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                        BRANCHING FLOW
                     </span>
                 </div>
-                <div style={{ height: '6px', background: 'var(--border-default)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ height: '4px', background: 'var(--border-default)', borderRadius: '2px', overflow: 'hidden' }}>
                     <div style={{
                         height: '100%',
-                        width: `${Math.min(((history.length + 1) / BRANCHING_QUESTIONS.length) * 100, 100)}%`, // Rough estimate
+                        width: `${Math.min(((history.length + 1) / 25) * 100, 100)}%`, // Estimated total of ~25 questions in a path
                         background: 'var(--primary)',
-                        transition: 'width 0.3s ease'
+                        transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                     }} />
                 </div>
             </div>
 
             {/* Current Question */}
             <div style={{
-                padding: '20px',
+                padding: '24px',
                 background: 'var(--bg-elevated)',
-                borderRadius: 'var(--radius-md)',
-                border: '2px solid var(--border-light)',
-                marginBottom: '20px'
+                borderRadius: '12px',
+                border: '1px solid var(--border-default)',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                marginBottom: '24px'
             }}>
-                <div style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: 'var(--primary)',
-                    marginBottom: '8px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
-                }}>
-                    Question
+                <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', lineHeight: 1.4, fontWeight: 600 }}>
+                        {currentQuestion.question}
+                    </h3>
+                    {currentQuestion.questionEn && (
+                        <p style={{ margin: 0, fontSize: '1rem', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                            {currentQuestion.questionEn}
+                        </p>
+                    )}
                 </div>
 
-                <h3 style={{ margin: '0 0 20px 0', fontSize: '1.1rem', lineHeight: 1.5 }}>
-                    {currentQuestion.question}
-                </h3>
-
                 {/* Input Area */}
-                <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label className="label">Answer *</label>
+                <div className="form-group" style={{ marginBottom: '24px' }}>
+                    <label className="label" style={{ marginBottom: '12px', display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                        RESPONSE
+                    </label>
                     {renderInput()}
                 </div>
 
                 {/* Remarks */}
                 {currentQuestion.remarks && (
-                    <div className="form-group">
-                        <label className="label">
-                            Your Remarks/Observations
-                            <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: '8px' }}>
+                    <div className="form-group" style={{ borderTop: '1px solid var(--border-default)', paddingTop: '20px' }}>
+                        <label className="label" style={{ marginBottom: '8px', display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                            INTERVIEWER NOTES
+                            <span style={{ fontWeight: 400, marginLeft: '4px', opacity: 0.7 }}>
                                 (optional)
                             </span>
                         </label>
                         <textarea
                             className="textarea"
-                            placeholder="Add your observations..."
+                            placeholder="Add your observation or direct quote..."
                             value={currentAnswer.remarks || ''}
                             onChange={e => handleRemarksChange(e.target.value)}
                             rows={2}
-                            style={{ fontSize: '0.9rem' }}
+                            style={{ fontSize: '0.9rem', background: 'var(--bg-inset)', border: 'none' }}
                         />
                     </div>
                 )}
@@ -235,25 +295,33 @@ export const QuestionnaireForm = ({ existingAnswers = [], onChange }: Questionna
                     className="btn btn-secondary"
                     onClick={handleBack}
                     disabled={history.length === 0}
+                    style={{ gap: '8px' }}
                 >
-                    <ChevronLeft size={16} /> Previous
+                    <ChevronLeft size={18} /> Previous
                 </button>
-
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    {/* Optional: Show current Q ID */}
-                </div>
 
                 {!isLastQuestion ? (
                     <button
                         className="btn btn-primary"
                         onClick={handleNext}
-                        disabled={!currentAnswer.answer} // Require answer to proceed
+                        disabled={!currentAnswer.answer || (Array.isArray(currentAnswer.answer) && currentAnswer.answer.length === 0)}
+                        style={{ gap: '8px', minWidth: '120px' }}
                     >
-                        Next <ChevronRight size={16} />
+                        Next <ChevronRight size={18} />
                     </button>
                 ) : (
-                    <div className="text-sm font-semibold text-green-600 flex items-center gap-2">
-                        <CheckCircle size={16} /> End of Questionnaire
+                    <div style={{
+                        padding: '8px 16px',
+                        background: 'var(--success-light)',
+                        color: 'var(--success)',
+                        borderRadius: '20px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}>
+                        <CheckCircle size={18} /> Final Step
                     </div>
                 )}
             </div>

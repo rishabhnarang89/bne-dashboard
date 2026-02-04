@@ -582,11 +582,27 @@ export const Interviews = () => {
                                                         paddingBottom: '12px',
                                                         borderBottom: idx < interview.questions!.length - 1 ? '1px solid var(--border-default)' : 'none'
                                                     }}>
-                                                        <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '6px', color: 'var(--text-primary)' }}>
-                                                            {(q as any).questionText || (q as any).question}
+                                                        <div style={{ marginBottom: '6px' }}>
+                                                            <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                                                                {(q as any).questionText || (q as any).question}
+                                                            </div>
+                                                            {(q as any).questionEn && (
+                                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                                                    {(q as any).questionEn}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                                                            {q.answer || <em style={{ color: 'var(--text-muted)' }}>No answer provided</em>}
+                                                        <div style={{
+                                                            fontSize: '0.85rem',
+                                                            color: 'var(--text-secondary)',
+                                                            marginBottom: '4px',
+                                                            background: 'var(--bg-inset)',
+                                                            padding: '8px',
+                                                            borderRadius: '4px'
+                                                        }}>
+                                                            {Array.isArray(q.answer)
+                                                                ? q.answer.join(', ')
+                                                                : (q.answer || <em style={{ color: 'var(--text-muted)' }}>No answer provided</em>)}
                                                         </div>
                                                         {q.remarks && (
                                                             <div style={{
