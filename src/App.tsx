@@ -7,6 +7,7 @@ import { BuildGuide } from './components/views/BuildGuide';
 import { Decision } from './components/views/Decision';
 import { Analytics } from './components/views/Analytics';
 import { Settings } from './components/views/Settings';
+import { Demo } from './components/views/Demo';
 import { ToastProvider } from './components/ui';
 
 const TAB_CONFIG: Record<Tab, { title: string; subtitle: string }> = {
@@ -15,6 +16,7 @@ const TAB_CONFIG: Record<Tab, { title: string; subtitle: string }> = {
   build: { title: 'Hardware & Software Guide', subtitle: 'Step-by-step instructions to build the MVP.' },
   decision: { title: 'Go/No-Go Decision Framework', subtitle: 'Live view of your validation criteria and recommendation.' },
   analytics: { title: 'Analytics Dashboard', subtitle: 'Visualize your interview data with charts and trends.' },
+  demo: { title: 'Interactive Product Demo', subtitle: 'Share the BNE Kit vision with teachers during interviews.' },
   settings: { title: 'Settings', subtitle: 'Customize goals, appearance, and manage your data.' }
 };
 
@@ -29,6 +31,7 @@ function App() {
       case 'build': return <BuildGuide />;
       case 'decision': return <Decision />;
       case 'analytics': return <Analytics />;
+      case 'demo': return <Demo />;
       case 'settings': return <Settings />;
       default: return <Timeline />;
     }

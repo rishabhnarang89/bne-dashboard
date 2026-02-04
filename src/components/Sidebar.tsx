@@ -1,12 +1,12 @@
 import {
     LayoutDashboard, Users, BookOpen, Scale, BarChart3, Settings,
-    Sun, Moon, Download, Menu, X, Clock, Target, Cloud, CloudOff, Loader2
+    Sun, Moon, Download, Menu, X, Clock, Target, Cloud, CloudOff, Loader2, Layout
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useValidationData, SPRINT_START, SPRINT_END } from '../hooks/useValidationData';
 import { MiniProgress } from './ui/ProgressRing';
 
-export type Tab = 'timeline' | 'interviews' | 'build' | 'decision' | 'analytics' | 'settings';
+export type Tab = 'timeline' | 'interviews' | 'build' | 'decision' | 'analytics' | 'demo' | 'settings';
 
 interface SidebarProps {
     activeTab: Tab;
@@ -59,6 +59,7 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
                 { id: 'interviews', label: 'Interview Tool', icon: Users },
                 { id: 'analytics', label: 'Analytics', icon: BarChart3 },
                 { id: 'decision', label: 'Go/No-Go', icon: Scale },
+                { id: 'demo', label: 'Demo', icon: Layout },
             ]
         },
         {
