@@ -1,23 +1,36 @@
 import { useState, useEffect } from 'react';
 import {
-    Network, ChevronRight, ChevronLeft,
-    ShieldCheck, GraduationCap,
-    Thermometer, Wind,
+    ChevronRight, ChevronLeft,
+    ShieldCheck,
     Cpu, CheckCircle2,
-    Building2, Leaf, Activity,
     RefreshCw, Zap, Settings,
-    Info, AlertCircle, Clock
+    Calendar, AlertTriangle, ClipboardCheck,
+    Lock, WifiOff
 } from 'lucide-react';
 
 // Types for the demo steps
-type DemoStepId = 'onboarding' | 'connection' | 'dashboard' | 'timelapse' | 'analysis' | 'expansion';
+type DemoStepId = 'problem' | 'promise' | 'magic' | 'ask';
 
 export const Demo = () => {
-    const [stepId, setStepId] = useState<DemoStepId>('onboarding');
+    const [stepId, setStepId] = useState<DemoStepId>('problem');
+    const [elapsedTime, setElapsedTime] = useState(0);
+    const [isTimerRunning, setIsTimerRunning] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'idle' | 'searching' | 'connecting' | 'connected'>('idle');
     const [windowOpen, setWindowOpen] = useState(0); // 0 to 100
     const [aiText, setAiText] = useState('');
-    const fullAiResponse = "I've analyzed the 48-hour dataset. The CO2 spike at 10:15 AM (1,240 ppm) directly correlates with your Physics class with 28 students. Note that while 'Stoßlüften' (burst ventilation) clears the CO2 in 4 minutes, the classroom temperature drops by 6°C, forcing the heating system to work 30% harder. This is a perfect 'Zielkonflikt' (target conflict) for your students to solve.";
+
+    const fullAiResponse = "CO2 spike at 10:15 AM (1,240 ppm) matches your Physics class. Ventilation clears it in 4 minutes but drops temperature 6°C—forcing heating to work 30% harder. This is the Zielkonflikt your students must solve.";
+
+    // Global Elapsed Timer
+    useEffect(() => {
+        let timer: ReturnType<typeof setInterval>;
+        if (isTimerRunning) {
+            timer = setInterval(() => setElapsedTime(t => t + 1), 1000);
+        }
+        return () => {
+            if (timer) clearInterval(timer);
+        };
+    }, [isTimerRunning]);
 
     // Keyboard navigation
     useEffect(() => {
@@ -29,27 +42,30 @@ export const Demo = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [stepId]);
 
-    // AI Typing effect
+    // AI Typing effect (faster at 12ms)
     useEffect(() => {
-        if (stepId === 'analysis') {
+        if (stepId === 'magic') {
             let i = 0;
             const timer = setInterval(() => {
                 setAiText(fullAiResponse.slice(0, i));
                 i++;
                 if (i > fullAiResponse.length) clearInterval(timer);
-            }, 20);
+            }, 12);
             return () => clearInterval(timer);
         } else {
             setAiText('');
         }
     }, [stepId]);
 
-    const steps: DemoStepId[] = ['onboarding', 'connection', 'dashboard', 'timelapse', 'analysis', 'expansion'];
+    const steps: DemoStepId[] = ['problem', 'promise', 'magic', 'ask'];
 
     const nextStep = () => {
         const currentIndex = steps.indexOf(stepId);
         if (currentIndex < steps.length - 1) {
-            setStepId(steps[currentIndex + 1]);
+            const next = steps[currentIndex + 1];
+            setStepId(next);
+            // Auto-start timer if moving to "promise"
+            if (next === 'promise') setIsTimerRunning(true);
         }
     };
 
@@ -60,457 +76,341 @@ export const Demo = () => {
         }
     };
 
-    // Connection Simulation
-    const startConnection = () => {
-        setConnectionStatus('searching');
-        setTimeout(() => setConnectionStatus('connecting'), 1500);
-        setTimeout(() => setConnectionStatus('connected'), 3000);
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // Derived values for simulator
+    // Connection Simulation (Speeded up)
+    const startConnection = () => {
+        setConnectionStatus('searching');
+        setTimeout(() => setConnectionStatus('connecting'), 800);
+        setTimeout(() => setConnectionStatus('connected'), 1600);
+    };
+
     const currentCO2 = Math.max(450, 1240 - (windowOpen * 8));
     const currentTemp = Math.max(15, 21.5 - (windowOpen * 0.06));
     const heatLoss = (windowOpen * 1.5).toFixed(1);
 
-    const renderOnboarding = () => (
-        <div className="demo-step onboarding-step" style={{ textAlign: 'center', animation: 'fadeIn 0.5s ease-out' }}>
-            <div style={{ display: 'inline-flex', padding: '8px 16px', background: 'var(--primary-light)', color: 'white', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 700, marginBottom: '24px', letterSpacing: '0.05em' }}>
-                DEMO SCENARIO
+    const renderProblem = () => (
+        <div className="demo-step problem-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--primary)', marginBottom: '16px' }}>
+                    What if BNE compliance took 2 minutes, not 2 months?
+                </h1>
+                <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                    Offline-first. Zero IT friction. Ready now.
+                </p>
             </div>
-            <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '16px', color: 'var(--primary)' }}>The Breathing Room</h1>
-            <p style={{ fontSize: '1.4rem', color: 'var(--text-secondary)', maxWidth: '700px', margin: '0 auto 40px', lineHeight: 1.6 }}>
-                A 6-week interdisciplinary BNE module for <strong>Grade 9 Physics</strong>.
-                Move from thermodynamics to systemic shaping competence (Gestaltungskompetenz).
-            </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', maxWidth: '900px', margin: '0 auto' }}>
-                <div className="glass-card" style={{ padding: '32px', textAlign: 'left', borderTop: '4px solid var(--primary)' }}>
-                    <div style={{ background: 'var(--bg-elevated)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', marginBottom: '16px', color: 'var(--primary)' }}>
-                        <GraduationCap size={24} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', maxWidth: '1000px', margin: '0 auto' }}>
+                <div className="glass-card" style={{ padding: '40px', borderTop: '6px solid #ef4444' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: '#ef4444' }}>
+                        <AlertTriangle size={32} />
+                        <h3 style={{ fontWeight: 800, fontSize: '1.25rem', margin: 0 }}>The Bureaucratic Nightmare</h3>
                     </div>
-                    <h3 style={{ fontWeight: 800, marginBottom: '8px' }}>Pedagogical Goal</h3>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Analyze thermodynamics through real-world environmental trade-offs.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', color: 'var(--text-secondary)' }}>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <span style={{ fontWeight: 800, color: 'var(--text-muted)', minWidth: '60px' }}>Day 1:</span>
+                            <span>Submit IT ticket for new software.</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px', opacity: 0.8 }}>
+                            <span style={{ fontWeight: 800, color: 'var(--text-muted)', minWidth: '60px' }}>Day 21:</span>
+                            <span>"Forwarded to data protection officer."</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px', opacity: 0.6 }}>
+                            <span style={{ fontWeight: 800, color: 'var(--text-muted)', minWidth: '60px' }}>Day 45:</span>
+                            <span>"Please provide DSGVO impact assessment."</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px', opacity: 0.4, fontStyle: 'italic' }}>
+                            <span style={{ fontWeight: 800, color: 'var(--text-muted)', minWidth: '60px' }}>Day 90:</span>
+                            <span>Still waiting...</span>
+                        </div>
+                    </div>
                 </div>
-                <div className="glass-card" style={{ padding: '32px', textAlign: 'left', borderTop: '4px solid #10b981' }}>
-                    <div style={{ background: 'rgba(16, 185, 129, 0.1)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', color: '#10b981' }}>
-                        <Activity size={24} />
+
+                <div className="glass-card" style={{ padding: '40px', borderTop: '6px solid var(--primary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
+                        <Calendar size={32} />
+                        <h3 style={{ fontWeight: 800, fontSize: '1.25rem', margin: 0 }}>The Compliance Clock</h3>
                     </div>
-                    <h3 style={{ fontWeight: 800, marginBottom: '8px' }}>The Action</h3>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Students log 48 hours of class data to develop a ventilation concept.</p>
-                </div>
-                <div className="glass-card" style={{ padding: '32px', textAlign: 'left', borderTop: '4px solid #f59e0b' }}>
-                    <div style={{ background: 'rgba(245, 158, 11, 0.1)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', color: '#f59e0b' }}>
-                        <Cpu size={24} />
+                    <div style={{ textAlign: 'center', padding: '24px', background: 'var(--bg-elevated)', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 700 }}>BNE AUDIT DEADLINE: MARCH 2025</div>
+                        <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ef4444' }}>0 / 4</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>REQUIRED MODULES DOCUMENTED</div>
                     </div>
-                    <h3 style={{ fontWeight: 800, marginBottom: '8px' }}>The Tech</h3>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Offline Edge-AI processing ensures 100% GDPR compliance.</p>
+                    <p style={{ marginTop: '24px', fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                        Every tool you find needs WiFi credentials you don't have, or patient accounts that require months of parental consent forms.
+                    </p>
                 </div>
             </div>
         </div>
     );
 
-    const renderConnection = () => (
-        <div className="demo-step connection-step" style={{ textAlign: 'center', animation: 'fadeIn 0.5s ease-out' }}>
-            <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '40px' }}>Zero-IT Connection Flow</h2>
+    const renderPromise = () => (
+        <div className="demo-step promise-step" style={{ textAlign: 'center', animation: 'fadeIn 0.5s ease-out' }}>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '40px' }}>The 2-Minute Promise</h2>
 
-            <div style={{ position: 'relative', width: '600px', height: '300px', margin: '0 auto 40px', background: 'var(--bg-elevated)', borderRadius: '24px', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                {/* Background Grid */}
-                <div style={{ position: 'absolute', inset: 0, opacity: 0.05, backgroundImage: 'radial-gradient(var(--primary) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-
+            <div style={{ position: 'relative', width: '600px', height: '350px', margin: '0 auto 40px', background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }}>
                 {connectionStatus === 'idle' && (
-                    <button className="btn btn-primary" onClick={startConnection} style={{ padding: '16px 32px', fontSize: '1.2rem', zIndex: 10 }}>
-                        <Zap size={20} style={{ marginRight: '8px' }} /> Discover Local Hub
-                    </button>
+                    <div style={{ textAlign: 'center', zIndex: 10 }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '24px', maxWidth: '400px' }}>
+                            Ready to prove "Zero IT Friction"? Start the connection flow.
+                        </div>
+                        <button className="btn btn-primary" onClick={startConnection} style={{ padding: '16px 40px', fontSize: '1.2rem', borderRadius: '16px' }}>
+                            <Zap size={24} style={{ marginRight: '12px' }} /> Start Discovery
+                        </button>
+                    </div>
                 )}
 
                 {(connectionStatus === 'searching' || connectionStatus === 'connecting') && (
                     <div style={{ textAlign: 'center' }}>
-                        <div className="animate-spin" style={{ marginBottom: '24px' }}>
-                            <RefreshCw size={64} color="var(--primary)" />
+                        <div className="animate-spin" style={{ marginBottom: '32px' }}>
+                            <RefreshCw size={80} color="var(--primary)" />
                         </div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>
-                            {connectionStatus === 'searching' ? 'Scanning for LoRaWAN Hub...' : 'Establishing Private Handshake...'}
-                        </div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '8px' }}>
-                            No WiFi credentials requested. No internet required.
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>
+                            {connectionStatus === 'searching' ? 'Locating Hub...' : 'Encrypted Handshake...'}
                         </div>
                     </div>
                 )}
 
                 {connectionStatus === 'connected' && (
-                    <div style={{ textAlign: 'center', animation: 'scaleIn 0.3s ease-out' }}>
-                        <div style={{ background: '#10b981', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: 'white' }}>
-                            <CheckCircle2 size={48} />
+                    <div style={{ textAlign: 'center', animation: 'scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
+                        <div style={{ background: '#10b981', width: '100px', height: '100px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: 'white' }}>
+                            <CheckCircle2 size={56} />
                         </div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>Connection Secured</div>
-                        <div style={{ color: 'var(--text-muted)', marginTop: '8px' }}>BNE-Hub-Classroom-A1 is now streaming locally.</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981' }}>SYSTEM LIVE</div>
+                        <div style={{ color: 'var(--text-muted)', marginTop: '8px', fontSize: '1.1rem' }}>Local Mesh Station Active</div>
                     </div>
                 )}
 
-                {/* Status Bar */}
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 24px', background: 'rgba(0,0,0,0.05)', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: connectionStatus === 'connected' ? '#10b981' : '#6b7280' }} />
-                        SYSTEM: {connectionStatus.toUpperCase()}
-                    </div>
-                    <div>ENCRYPTION: AES-128 LOCAL ONLY</div>
+                {/* Seqeuntial Badges */}
+                <div style={{ position: 'absolute', bottom: '24px', left: '24px', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
+                    {connectionStatus === 'connected' && (
+                        <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#10b981', animation: 'slideInRight 0.3s ease-out' }}>
+                                <WifiOff size={16} /> NO WIFI REQUIRED
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#10b981', animation: 'slideInRight 0.3s ease-out 0.1s both' }}>
+                                <Lock size={16} /> NO STUDENT ACCOUNTS
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#10b981', animation: 'slideInRight 0.3s ease-out 0.2s both' }}>
+                                <CheckCircle2 size={16} /> NO IT TICKET NEEDED
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '48px' }}>
-                <div style={{ textAlign: 'left' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', fontWeight: 800, marginBottom: '8px' }}>
-                        <ShieldCheck size={20} /> The Result:
+            <div style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
+                "In less than two minutes, you have a fully functional BNE learning station. No credentials. No Waiting."
+            </div>
+        </div>
+    );
+
+    const renderMagic = () => (
+        <div className="demo-step magic-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>The Curriculum Magic</h2>
+                <div style={{ background: 'var(--primary-light)', color: 'white', padding: '8px 16px', borderRadius: '12px', fontWeight: 700, fontSize: '0.9rem' }}>
+                    TOPIC: ENERGY VS HEALTH
+                </div>
+            </div>
+
+            {/* 3-Panel Layout */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    {/* Panel 1: 48h Timelapse */}
+                    <div className="card" style={{ padding: '24px', background: 'white', height: '240px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                            <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>48-HOUR CLASSROOM CO2 FINGERPRINT</div>
+                            <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 800 }}>SPIKE: 1,240 PPM</div>
+                        </div>
+                        <svg width="100%" height="140" viewBox="0 0 1000 140" preserveAspectRatio="none">
+                            <path d="M0,120 L100,120 L150,80 L200,40 L250,60 L300,20 L400,120 L500,120 L550,70 L600,30 L650,55 L700,15 L800,120 L1000,120" fill="none" stroke="var(--primary)" strokeWidth="4" />
+                            <rect x="290" y="10" width="20" height="20" fill="rgba(239, 68, 68, 0.1)" stroke="#ef4444" strokeWidth="1" />
+                        </svg>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                            <span>PERIOD 1</span>
+                            <span>PERIOD 3 (PHYSICS)</span>
+                            <span>PERIOD 5</span>
+                            <span>NEXT DAY</span>
+                        </div>
                     </div>
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                        <li style={{ marginBottom: '4px' }}>✓ No student accounts needed</li>
-                        <li style={{ marginBottom: '4px' }}>✓ Bypasses School WiFi restrictions</li>
-                        <li style={{ marginBottom: '4px' }}>✓ 100% DSGVO / GDPR compliant</li>
+
+                    {/* Panel 2: AI Insight */}
+                    <div className="glass-card" style={{ padding: '24px', background: 'white', borderLeft: '6px solid var(--primary)', flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', color: 'var(--primary)' }}>
+                            <Cpu size={24} />
+                            <h4 style={{ fontWeight: 800, fontSize: '1rem', margin: 0 }}>THE BUILT-IN TUTOR</h4>
+                        </div>
+                        <div style={{ fontSize: '1.1rem', color: '#1e293b', lineHeight: 1.5, fontStyle: 'italic', minHeight: '100px' }}>
+                            {aiText}
+                            <span className="cursor" style={{ display: 'inline-block', width: '2px', height: '1.1rem', background: 'var(--primary)', marginLeft: '4px' }} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Panel 3: High-Impact Simulator */}
+                <div className="card" style={{ padding: '32px', background: '#fff7ed', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+                        <Settings size={24} color="#f97316" />
+                        <h4 style={{ fontWeight: 800, fontSize: '1.1rem', margin: 0 }}>TARGET CONFLICT SIMULATOR</h4>
+                    </div>
+
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', fontWeight: 800 }}>
+                            <span>WINDOW STATUS</span>
+                            <span style={{ color: '#f97316', fontSize: '1.25rem' }}>{windowOpen}% OPEN</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={windowOpen}
+                            onChange={(e) => setWindowOpen(parseInt(e.target.value))}
+                            style={{ width: '100%', height: '16px', accentColor: '#f97316', cursor: 'pointer', marginBottom: '48px' }}
+                        />
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                            <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', border: currentCO2 > 1000 ? '2px solid #fecaca' : '2px solid #d1fae5', transition: 'all 0.2s' }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Health (CO2)</div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: currentCO2 > 1000 ? '#ef4444' : '#10b981' }}>{currentCO2} <span style={{ fontSize: '0.7rem' }}>PPM</span></div>
+                            </div>
+                            <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', border: currentTemp < 19 ? '2px solid #fecaca' : '2px solid #f1f5f9', transition: 'all 0.2s' }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Temp</div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: currentTemp < 19 ? '#ef4444' : 'var(--text-primary)' }}>{currentTemp.toFixed(1)} <span style={{ fontSize: '0.7rem' }}>°C</span></div>
+                            </div>
+                            <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', border: windowOpen > 40 ? '2px solid #fecaca' : '2px solid #f1f5f9', transition: 'all 0.2s' }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Heat Cost</div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: windowOpen > 40 ? '#ef4444' : 'var(--text-primary)' }}>+{heatLoss}%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '32px', textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, color: '#9a3412', background: 'rgba(249, 115, 22, 0.1)', padding: '12px', borderRadius: '12px' }}>
+                        Students must negotiate the trade-off.
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderAsk = () => (
+        <div className="demo-step ask-step" style={{ textAlign: 'center', animation: 'fadeIn 0.5s ease-out' }}>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '48px' }}>The Ask</h2>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '48px', maxWidth: '1000px', margin: '0 auto', alignItems: 'start' }}>
+                <div style={{ textAlign: 'left' }}>
+                    <div style={{ background: 'var(--primary)', padding: '48px', borderRadius: '24px', color: 'white', marginBottom: '32px', boxShadow: '0 20px 25px -5px rgba(59, 130, 246, 0.2)' }}>
+                        <div style={{ fontSize: '1rem', fontWeight: 600, opacity: 0.9, marginBottom: '8px' }}>UNIT PRICE:</div>
+                        <div style={{ fontSize: '5rem', fontWeight: 900 }}>€799</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '1.1rem', fontWeight: 700, marginTop: '16px' }}>
+                            <CheckCircle2 size={24} /> UNDER GWG LIMIT
+                        </div>
+                    </div>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 700, fontSize: '1.1rem' }}>
+                            <div style={{ color: 'var(--primary)' }}><ShieldCheck size={24} /></div>
+                            No municipal tender required.
+                        </li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 700, fontSize: '1.1rem' }}>
+                            <div style={{ color: 'var(--primary)' }}><ClipboardCheck size={24} /></div>
+                            Complete 6-week module included.
+                        </li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 700, fontSize: '1.1rem' }}>
+                            <div style={{ color: 'var(--primary)' }}><Lock size={24} /></div>
+                            100% DSGVO compliant (Local only).
+                        </li>
                     </ul>
                 </div>
-                <div style={{ width: '1px', background: 'var(--border-light)' }} />
-                <div style={{ textAlign: 'left' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', fontWeight: 800, marginBottom: '8px' }}>
-                        <Clock size={20} /> Setup Time:
-                    </div>
-                    <div style={{ fontSize: '2rem', fontWeight: 900 }}>112 <span style={{ fontSize: '1rem', fontWeight: 600 }}>seconds</span></div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>From unboxing to live dashboard.</div>
-                </div>
-            </div>
-        </div>
-    );
 
-    const renderDashboard = () => (
-        <div className="demo-step dashboard-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
-                <div>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '8px' }}>Live Product Interface</h2>
-                    <p style={{ color: 'var(--text-muted)' }}>Teacher's Backend View - Offline Campus Network</p>
-                </div>
-                <div style={{ background: 'var(--bg-elevated)', padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', animation: 'pulse 2s infinite' }} />
-                    <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>HUB-01 STREAMING</span>
-                </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                    <div className="card" style={{ padding: '24px', background: 'white', position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', top: 0, right: 0, padding: '8px', opacity: 0.1 }}><Wind size={64} /></div>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>CO2 Concentration</div>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '4px' }}>842 <span style={{ fontSize: '1rem' }}>PPM</span></div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#f59e0b', fontWeight: 700 }}>
-                            <AlertCircle size={14} /> Moderate Air Quality
-                        </div>
-                    </div>
-                    <div className="card" style={{ padding: '24px', background: 'white', position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', top: 0, right: 0, padding: '8px', opacity: 0.1 }}><Thermometer size={64} /></div>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>Temperature</div>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '4px' }}>{currentTemp.toFixed(1)} <span style={{ fontSize: '1rem' }}>°C</span></div>
-                        <div style={{ fontSize: '0.8rem', color: currentTemp < 19 ? '#f59e0b' : '#10b981', fontWeight: 700 }}>{currentTemp < 19 ? 'Low Temperature' : 'Optimal Learning Range'}</div>
-                    </div>
-                    <div className="card" style={{ padding: '24px', background: 'white', position: 'relative', overflow: 'hidden', gridColumn: 'span 2' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <div style={{ fontWeight: 800 }}>Node Health: Classroom A1</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Uptime: 14d 2h 11m</div>
-                        </div>
-                        <div style={{ height: '40px', display: 'flex', gap: '4px', alignItems: 'flex-end' }}>
-                            {[...Array(30)].map((_, i) => (
-                                <div key={i} style={{ flex: 1, background: 'var(--primary-light)', height: `${20 + Math.random() * 80}%`, borderRadius: '2px', opacity: 0.3 + (i / 30) * 0.7 }} />
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="glass-card" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>System Observations</div>
-                    <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                        <div style={{ padding: '8px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', color: '#3b82f6' }}><Info size={18} /></div>
-                        <div>
-                            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Pattern Detected</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>CO2 regularly exceeds 1200ppm between 09:45 and 10:30.</div>
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                        <div style={{ padding: '8px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', color: '#10b981' }}><CheckCircle2 size={18} /></div>
-                        <div>
-                            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Module Ready</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>BNE Week 2: "The Breathing Classroom" dataset complete.</div>
-                        </div>
-                    </div>
-
-                    <div style={{ marginTop: 'auto', padding: '16px', background: 'var(--bg-elevated)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>DATA PERSISTENCE</div>
-                        <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Storage: On-Node (4.2GB available)</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No data ever leaves the school campus.</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-    const renderTimelapse = () => (
-        <div className="demo-step timelapse-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-            <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '24px' }}>48-Hour Dataset Snapshot</h2>
-            <div style={{ height: '350px', background: 'white', borderRadius: '24px', padding: '40px', border: '1px solid var(--border-light)', position: 'relative', overflow: 'hidden' }}>
-                {/* Simulated Chart */}
-                <svg width="100%" height="100%" viewBox="0 0 1000 300" preserveAspectRatio="none">
-                    {/* Grid Lines */}
-                    {[0, 1, 2, 3].map(i => (
-                        <line key={i} x1="0" y1={i * 100} x2="1000" y2={i * 100} stroke="#f1f5f9" strokeWidth="2" />
-                    ))}
-
-                    {/* The Path */}
-                    <path
-                        d="M0,250 L100,250 L150,150 L200,80 L250,120 L300,50 L400,250 L500,250 L550,140 L600,70 L650,110 L700,40 L800,250 L1000,250"
-                        fill="none"
-                        stroke="var(--primary)"
-                        strokeWidth="4"
-                        strokeLinejoin="round"
-                    />
-                    {/* Fill Area */}
-                    <path
-                        d="M0,250 L100,250 L150,150 L200,80 L250,120 L300,50 L400,250 L500,250 L550,140 L600,70 L650,110 L700,40 L800,250 L1000,250 V300 H0 Z"
-                        fill="url(#chartGradient)"
-                        opacity="0.1"
-                    />
-                    <defs>
-                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="var(--primary)" />
-                            <stop offset="100%" stopColor="white" />
-                        </linearGradient>
-                    </defs>
-
-                    {/* Annotations */}
-                    <circle cx="300" cy="50" r="6" fill="#ef4444" />
-                    <circle cx="700" cy="40" r="6" fill="#ef4444" />
-                </svg>
-
-                <div style={{ position: 'absolute', top: '60px', left: '320px', background: '#ef4444', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800 }}>
-                    1,240 PPM SPIKE
-                </div>
-
-                {/* Timeline Axis */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>
-                    <span>MONDAY 07:00</span>
-                    <span>MONDAY 14:00</span>
-                    <span>TUESDAY 07:00</span>
-                    <span>TUESDAY 14:00</span>
-                </div>
-            </div>
-
-            <div style={{ marginTop: '32px', textAlign: 'center' }}>
-                <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)' }}>
-                    "The graph isn't just a line. It's the **fingerprint of your school's behavior**."
-                </p>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                        <div style={{ width: 12, height: 12, borderRadius: 2, background: 'var(--primary)' }} /> CO2 Concentration (PPM)
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-    const renderAnalysis = () => (
-        <div className="demo-step analysis-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
-                <div className="glass-card" style={{ padding: '32px', background: 'white', borderLeft: '6px solid var(--primary)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
-                        <Cpu size={32} />
-                        <h3 style={{ fontWeight: 800, fontSize: '1.25rem', margin: 0 }}>OFFLINE AI ANALYSIS</h3>
-                    </div>
-
-                    <div style={{ minHeight: '180px', fontSize: '1.2rem', color: '#1e293b', lineHeight: 1.6, fontStyle: 'italic', marginBottom: '24px' }}>
-                        {aiText}
-                        <span className="cursor" style={{ display: 'inline-block', width: '2px', height: '1.2rem', background: 'var(--primary)', marginLeft: '4px' }} />
-                    </div>
-
-                    <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        <div style={{ fontWeight: 700, marginBottom: '4px' }}>BNE PEDAGOGY NOTE:</div>
-                        This drives **Systemic Thinking**. Students stop seeing just "numbers" and start seeing "interconnected trade-offs."
-                    </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div className="card" style={{ padding: '32px', background: '#fff7ed' }}>
-                        <h3 style={{ fontWeight: 800, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Settings size={20} color="#f97316" /> Target Conflict Simulator
-                        </h3>
-
-                        <div style={{ marginBottom: '32px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 700 }}>
-                                <span>Classroom Ventilation (Window Status)</span>
-                                <span style={{ color: '#f97316' }}>{windowOpen}% Open</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={windowOpen}
-                                onChange={(e) => setWindowOpen(parseInt(e.target.value))}
-                                style={{ width: '100%', height: '8px', accentColor: '#f97316', cursor: 'pointer' }}
-                            />
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', border: '1px solid #fde68a' }}>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>CO2 Level</div>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: currentCO2 > 1000 ? '#ef4444' : '#10b981' }}>{currentCO2} <span style={{ fontSize: '0.8rem' }}>PPM</span></div>
-                            </div>
-                            <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', border: '1px solid #fde68a' }}>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Heating Cost Impact</div>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: windowOpen > 20 ? '#ef4444' : 'var(--text-primary)' }}>+{heatLoss}%</div>
-                            </div>
-                        </div>
-
-                        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.85rem', fontWeight: 600, color: '#9a3412' }}>
-                            Finding the "Goldilocks Zone" is the lesson.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-    const renderExpansion = () => (
-        <div className="demo-step expansion-step" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '48px', alignItems: 'center' }}>
-                <div style={{ textAlign: 'left' }}>
-                    <div style={{ display: 'inline-flex', padding: '6px 16px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, marginBottom: '16px' }}>
-                        THE PROCUREMENT SHIELD
-                    </div>
-                    <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '16px' }}>Bypassing the Bureaucracy</h2>
-                    <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '32px' }}>
-                        Designed to fit into the **GWG (Geringwertiges Wirtschaftsgut)** budget.
-                        No municipal tender process required.
+                <div className="glass-card" style={{ padding: '48px', textAlign: 'left' }}>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '24px' }}>Help us validate this.</h3>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '1.1rem' }}>
+                        Would you be willing to give us honest feedback on a trial?
                     </p>
 
-                    <div style={{ background: '#f8fafc', padding: '32px', borderRadius: '24px', border: '1px solid var(--border-light)', marginBottom: '32px' }}>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 700 }}>SINGLE UNIT PRICE:</div>
-                        <div style={{ fontSize: '4.5rem', fontWeight: 900, color: 'var(--primary)' }}>€799</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontWeight: 800, marginTop: '8px' }}>
-                            <CheckCircle2 size={24} /> Sub-€800 Limit Approved
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                        <button className="btn btn-ghost" style={{ border: '1px solid var(--border-light)' }}>Download Quote PDF</button>
-                        <button className="btn btn-ghost" style={{ border: '1px solid var(--border-light)' }}>See KMK Compliance Doc</button>
-                    </div>
-                </div>
-
-                <div className="glass-card" style={{ padding: '40px', textAlign: 'left' }}>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <Network size={24} color="var(--primary)" /> Whole School Approach Rollout
-                    </h3>
-
-                    <div style={{ position: 'relative', height: '240px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                            <div style={{ padding: '12px', background: 'var(--primary-light)', borderRadius: '12px', color: 'white' }}><Wind size={24} /></div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: 800 }}>Phase 1: Physics Dept (Today)</div>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>"Breathing Room" Sustainability Module</div>
-                            </div>
-                            <div style={{ color: '#10b981', fontWeight: 800 }}>€799</div>
-                        </div>
-                        <div style={{ height: '30px', width: '2px', background: 'var(--border-light)', marginLeft: '24px' }} />
-                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center', opacity: 0.6 }}>
-                            <div style={{ padding: '12px', background: '#10b981', borderRadius: '12px', color: 'white' }}><Leaf size={24} /></div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: 800 }}>Phase 2: Biology Dept</div>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Automated Campus Garden & Soil Health</div>
-                            </div>
-                            <div style={{ fontWeight: 700 }}>€799</div>
-                        </div>
-                        <div style={{ height: '30px', width: '2px', background: 'var(--border-light)', marginLeft: '24px' }} />
-                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center', opacity: 0.4 }}>
-                            <div style={{ padding: '12px', background: '#f59e0b', borderRadius: '12px', color: 'white' }}><Building2 size={24} /></div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: 800 }}>Phase 3: Shared Infrastructure</div>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Facility Resource Efficiency Tracking</div>
-                            </div>
-                            <div style={{ fontWeight: 700 }}>€799</div>
-                        </div>
-                    </div>
-
-                    <div style={{ marginTop: '40px', padding: '20px', background: 'var(--bg-elevated)', borderRadius: '16px', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, color: 'var(--primary)', marginBottom: '8px' }}>
-                            <Activity size={16} /> Campus Mesh Network
-                        </div>
-                        Units connect via LoRaWAN. You are building school-wide BNE infrastructure, invoice by invoice.
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {[
+                            "Trial this in my classroom this semester",
+                            "Recommend to my department head",
+                            "Connect us with other subject teachers",
+                            "I have specific questions first"
+                        ].map((item, i) => (
+                            <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--bg-elevated)', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid var(--border-light)' }}>
+                                <input type="checkbox" style={{ width: '24px', height: '24px', accentColor: 'var(--primary)' }} />
+                                <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{item}</span>
+                            </label>
+                        ))}
                     </div>
                 </div>
             </div>
         </div>
     );
-
-    const renderStepContent = () => {
-        switch (stepId) {
-            case 'onboarding': return renderOnboarding();
-            case 'connection': return renderConnection();
-            case 'dashboard': return renderDashboard();
-            case 'timelapse': return renderTimelapse();
-            case 'analysis': return renderAnalysis();
-            case 'expansion': return renderExpansion();
-            default: return renderOnboarding();
-        }
-    };
 
     return (
         <div className="demo-view" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 0' }}>
-            {/* Phase Navigation */}
-            <div className="demo-nav" style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
-                {steps.map((id, index) => {
-                    const isActive = stepId === id;
-                    const isCompleted = steps.indexOf(stepId) > index;
-                    return (
-                        <div
-                            key={id}
-                            onClick={() => setStepId(id)}
-                            style={{
-                                flex: 1,
-                                height: '6px',
-                                background: isActive ? 'var(--primary)' : isCompleted ? 'var(--primary-light)' : 'var(--border-light)',
-                                borderRadius: '3px',
-                                transition: 'all 0.3s',
-                                cursor: 'pointer'
-                            }}
-                        />
-                    );
-                })}
+            {/* Projector Header (Hidden if needed) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: isTimerRunning ? '#ef4444' : 'var(--text-muted)', animation: isTimerRunning ? 'pulse 2s infinite' : 'none' }} />
+                    <span style={{ fontWeight: 800, fontSize: '1.1rem', color: isTimerRunning ? '#ef4444' : 'var(--text-muted)' }}>
+                        {isTimerRunning ? 'LIVE DEMO RUNNING' : 'DEMO IDLE'}
+                    </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>ELAPSED TIME</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 900, fontFamily: 'monospace' }}>{formatTime(elapsedTime)}</div>
+                    </div>
+                </div>
             </div>
 
-            <div className="demo-stage" style={{ minHeight: '650px', background: 'var(--bg-card)', padding: '60px', borderRadius: '32px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-xl)', position: 'relative' }}>
-                {renderStepContent()}
+            <div className="demo-stage" style={{ minHeight: '700px', background: 'var(--bg-card)', padding: '60px', borderRadius: '32px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-xl)', position: 'relative' }}>
+                {stepId === 'problem' && renderProblem()}
+                {stepId === 'promise' && renderPromise()}
+                {stepId === 'magic' && renderMagic()}
+                {stepId === 'ask' && renderAsk()}
+
+                {/* Subtle Hint */}
+                <div style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.75rem', color: 'var(--text-muted)', opacity: 0.5 }}>
+                    [DEMO TIP: {stepId === 'ask' ? 'Make eye contact and wait for response' : 'Use arrow keys to navigate'}]
+                </div>
             </div>
 
             <div className="demo-controls" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '40px' }}>
                 <button
                     className="btn btn-ghost"
                     onClick={prevStep}
-                    disabled={stepId === 'onboarding'}
+                    disabled={stepId === 'problem'}
                     style={{ padding: '12px 32px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '1.1rem' }}
                 >
                     <ChevronLeft size={20} /> <span style={{ opacity: 0.6 }}>PREVIOUS</span>
                 </button>
 
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                        STEP {steps.indexOf(stepId) + 1} OF {steps.length}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700 }}>
-                        {stepId.toUpperCase()}
-                    </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    {steps.map((id) => (
+                        <div
+                            key={id}
+                            style={{
+                                width: '12px', height: '12px', borderRadius: '50%',
+                                background: stepId === id ? 'var(--primary)' : 'var(--border-light)',
+                                transition: 'all 0.3s'
+                            }}
+                        />
+                    ))}
                 </div>
 
                 <button
                     className="btn btn-primary"
                     onClick={nextStep}
-                    disabled={stepId === 'expansion'}
+                    disabled={stepId === 'ask'}
                     style={{ padding: '12px 48px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '1.2rem', boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.3)' }}
                 >
-                    <span>{stepId === 'expansion' ? 'READY' : 'NEXT STEP'}</span>
+                    <span>{stepId === 'ask' ? 'FINISH' : 'NEXT STEP'}</span>
                     <ChevronRight size={24} />
                 </button>
             </div>
@@ -520,14 +420,18 @@ export const Demo = () => {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
+                @keyframes slideInRight {
+                    from { opacity: 0; transform: translateX(20px); }
+                    to { opacity: 1; transform: translateX(0); }
+                }
                 @keyframes scaleIn {
                     from { transform: scale(0.95); opacity: 0; }
                     to { transform: scale(1); opacity: 1; }
                 }
                 @keyframes pulse {
-                    0% { opacity: 1; }
-                    50% { opacity: 0.4; }
-                    100% { opacity: 1; }
+                    0% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.1); opacity: 0.6; }
+                    100% { transform: scale(1); opacity: 1; }
                 }
                 .glass-card {
                     background: rgba(255, 255, 255, 0.7);
@@ -542,11 +446,18 @@ export const Demo = () => {
                     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
                 }
                 .animate-spin {
-                    animation: spin 3s linear infinite;
+                    animation: spin 2s linear infinite;
                 }
                 @keyframes spin {
                     from { transform: rotate(0deg); }
                     to { transform: rotate(360deg); }
+                }
+                .cursor {
+                    animation: blink 1s infinite;
+                }
+                @keyframes blink {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0; }
                 }
             `}</style>
         </div>
