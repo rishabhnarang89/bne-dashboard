@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
     ChevronRight, ChevronLeft,
-    ShieldCheck,
-    Cpu, CheckCircle2,
-    Zap, Settings,
-    AlertTriangle, AlertCircle,
-    WifiOff, Clock, Wind,
-    Bot, Brain, Thermometer, Users, Target
+    Clock, Wind,
+    Bot,
+    Settings, AlertTriangle, AlertCircle,
+    CheckCircle2, Cpu, Zap,
+    Users
 } from 'lucide-react';
 
 // Types for the demo steps
@@ -18,9 +17,9 @@ export const Demo = () => {
     const [isTimerRunning, setIsTimerRunning] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'idle' | 'searching' | 'connecting' | 'connected'>('idle');
     const [windowOpen, setWindowOpen] = useState(0); // 0 to 100
-    const [aiText, setAiText] = useState('');
 
-    const fullAiResponse = "CO2 spike at 10:15 AM (1,240 ppm) matches your Physics class. Ventilation clears it in 4 minutes but drops temperature 6°C—forcing heating to work 30% harder. This is the Zielkonflikt your students must solve.";
+
+
 
     // Global Elapsed Timer
     useEffect(() => {
@@ -43,21 +42,7 @@ export const Demo = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [stepId]);
 
-    // AI Typing effect
-    useEffect(() => {
-        if (stepId === 'evaluation') {
-            let i = 0;
-            const timer = setInterval(() => {
-                setAiText(fullAiResponse.slice(0, i));
-                i++;
-                if (i > fullAiResponse.length) clearInterval(timer);
-            }, 15);
-            return () => clearInterval(timer);
-        } else if (stepId !== 'conflict') {
-            // We keep AI text visible in 'conflict' step as context, but reset elsewhere
-            setAiText('');
-        }
-    }, [stepId]);
+
 
     const steps: DemoStepId[] = ['problem', 'promise', 'pulse', 'fingerprint', 'evaluation', 'conflict', 'ask'];
 
@@ -259,7 +244,7 @@ export const Demo = () => {
                     <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', lineHeight: 1.4 }}>
                         At <strong>842 ppm</strong>, research indicates:
                     </div>
-                    <ul style={{ padding: 0, listStyle: 'none', space: 'y-4' }}>
+                    <ul style={{ padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <li style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
                             <span style={{ fontWeight: 600, opacity: 0.8 }}>Decision Making</span>
                             <span style={{ fontWeight: 900, color: '#f87171' }}>-11%</span>
