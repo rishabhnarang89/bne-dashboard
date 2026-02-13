@@ -599,7 +599,7 @@ export const Interviews = () => {
                                                 color: 'var(--primary)',
                                                 userSelect: 'none'
                                             }}>
-                                                📋 View Questionnaire Responses ({interview.questions.filter((q: any) => q.answer && q.answer.trim()).length}/{interview.questions.length} answered)
+                                                📋 View Questionnaire Responses ({interview.questions.filter((q: any) => q.answer != null && (typeof q.answer === 'string' ? q.answer.trim() !== '' : Array.isArray(q.answer) ? q.answer.length > 0 : true)).length}/{interview.questions.length} answered)
                                             </summary>
                                             <div style={{
                                                 marginTop: '12px',

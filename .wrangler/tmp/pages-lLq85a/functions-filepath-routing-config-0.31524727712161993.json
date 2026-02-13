@@ -1,0 +1,37 @@
+{
+  "routes": [
+    {
+      "routePath": "/api/goals",
+      "mountPath": "/api",
+      "method": "",
+      "module": [
+        "api/goals.ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/api/interviews",
+      "mountPath": "/api",
+      "method": "",
+      "module": [
+        "api/interviews.ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/api/tasks",
+      "mountPath": "/api",
+      "method": "",
+      "module": [
+        "api/tasks.ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/api/teachers",
+      "mountPath": "/api",
+      "method": "",
+      "module": [
+        "api/teachers.ts:onRequest"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}
