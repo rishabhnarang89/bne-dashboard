@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useValidationData } from '../../hooks/useValidationData';
-import type { Teacher, TeacherStatus, Interview, InterviewQuestionResponse, LegacyInterviewQuestion, ContactMethod } from '../../hooks/useValidationData';
+import type { Teacher, TeacherStatus, Interview, InterviewQuestionResponse, LegacyInterviewQuestion, ContactMethod, TeamMember } from '../../hooks/useValidationData';
 import {
     Plus, Trash2, Edit3, Search,
     Clock, Star, MessageSquare,
-    Linkedin, Mail, Calendar, ExternalLink,
+    Linkedin, Mail, Calendar, ExternalLink, Phone,
     LayoutGrid, List as ListIcon
 } from 'lucide-react';
 import { useToast, InfoBlock, Modal, InterviewTimer, QuestionnaireForm } from '../ui';
@@ -38,6 +38,7 @@ export const Interviews = () => {
     // Filter & Search state
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+    const [filterOwner, setFilterOwner] = useState<string>('all');
 
     // Teacher form modal
     const [teacherModalOpen, setTeacherModalOpen] = useState(false);
@@ -89,11 +90,19 @@ export const Interviews = () => {
             result = result.filter(t => t.status === filterStatus);
         }
 
+        if (filterOwner !== 'all') {
+            if (filterOwner === 'unassigned') {
+                result = result.filter(t => !t.owner);
+            } else {
+                result = result.filter(t => t.owner === filterOwner);
+            }
+        }
+
         // Sort by created date (newest first)
         result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         return result;
-    }, [teachers, searchQuery, filterStatus]);
+    }, [teachers, searchQuery, filterStatus, filterOwner]);
 
     // Get selected teacher
     const selectedTeacher = selectedTeacherId ? teachers.find(t => t.id === selectedTeacherId) : null;
@@ -306,6 +315,18 @@ export const Interviews = () => {
                             <option value="scheduled">📅 Scheduled</option>
                             <option value="interviewed">✅ Done</option>
                         </select>
+                        <select
+                            className="input"
+                            value={filterOwner}
+                            onChange={e => setFilterOwner(e.target.value)}
+                            style={{ width: 'auto' }}
+                        >
+                            <option value="all">All Owners</option>
+                            <option value="rishabh">👨‍💻 Rishabh</option>
+                            <option value="tung">🎯 Tung</option>
+                            <option value="johannes">🔬 Johannes</option>
+                            <option value="unassigned">❓ Unassigned</option>
+                        </select>
                         <button
                             className="btn btn-primary"
                             onClick={() => { setEditingTeacher(null); setTeacherForm({ status: 'identified', schoolType: 'Gymnasium' }); setTeacherModalOpen(true); }}
@@ -440,6 +461,16 @@ export const Interviews = () => {
                             >
                                 <Linkedin size={14} /> LinkedIn Profile <ExternalLink size={12} />
                             </a>
+                        )}
+                        {selectedTeacher.phoneNumber && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                <Phone size={14} /> {selectedTeacher.phoneNumber}
+                            </div>
+                        )}
+                        {selectedTeacher.owner && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                👤 Owner: {selectedTeacher.owner.charAt(0).toUpperCase() + selectedTeacher.owner.slice(1)}
+                            </div>
                         )}
                         {selectedTeacher.requestSentDate && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
@@ -744,6 +775,31 @@ export const Interviews = () => {
                                 value={teacherForm.linkedinUrl || ''}
                                 onChange={e => setTeacherForm({ ...teacherForm, linkedinUrl: e.target.value })}
                             />
+                        </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div className="form-group">
+                            <label className="label">Phone Number</label>
+                            <input
+                                className="input"
+                                type="tel"
+                                placeholder="+49 123 456 7890"
+                                value={teacherForm.phoneNumber || ''}
+                                onChange={e => setTeacherForm({ ...teacherForm, phoneNumber: e.target.value })}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Account Owner</label>
+                            <select
+                                className="input"
+                                value={teacherForm.owner || ''}
+                                onChange={e => setTeacherForm({ ...teacherForm, owner: (e.target.value || undefined) as TeamMember | undefined })}
+                            >
+                                <option value="">Not assigned</option>
+                                <option value="rishabh">👨‍💻 Rishabh</option>
+                                <option value="tung">🎯 Tung</option>
+                                <option value="johannes">🔬 Johannes</option>
+                            </select>
                         </div>
                     </div>
                     <div className="form-group">

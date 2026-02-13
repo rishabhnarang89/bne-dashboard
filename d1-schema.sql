@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     is_default INTEGER DEFAULT 0,
     subtasks TEXT DEFAULT '[]',
     linked_interview_id INTEGER,
-    assignee TEXT CHECK (assignee IN ('rishabh', 'tung', 'both'))
+    assignee TEXT CHECK (assignee IN ('rishabh', 'tung', 'johannes', 'all'))
 );
 
 -- Teachers table (CRM)
@@ -41,7 +41,9 @@ CREATE TABLE IF NOT EXISTS teachers (
     next_follow_up_date TEXT,
     linkedin_message_sent INTEGER DEFAULT 0,
     email_sent INTEGER DEFAULT 0,
-    phone_call_made INTEGER DEFAULT 0
+    phone_call_made INTEGER DEFAULT 0,
+    owner TEXT,
+    phone_number TEXT
 );
 
 -- Interviews table (linked to teachers)

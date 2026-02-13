@@ -19,7 +19,8 @@ const PRIORITY_CONFIG = {
 const ASSIGNEE_CONFIG: Record<TeamMember, { color: string; bg: string; label: string; emoji: string }> = {
     rishabh: { color: '#3b82f6', bg: '#eff6ff', label: 'Rishabh', emoji: '👨‍💻' },
     tung: { color: '#8b5cf6', bg: '#f5f3ff', label: 'Tung', emoji: '🎯' },
-    both: { color: '#10b981', bg: '#ecfdf5', label: 'Both', emoji: '👥' }
+    johannes: { color: '#f59e0b', bg: '#fffbeb', label: 'Johannes', emoji: '🔬' },
+    all: { color: '#10b981', bg: '#ecfdf5', label: 'All', emoji: '👥' }
 };
 
 export const Timeline = () => {
@@ -633,7 +634,8 @@ export const Timeline = () => {
                             <option value="">Not assigned</option>
                             <option value="rishabh">👨‍💻 Rishabh</option>
                             <option value="tung">🎯 Tung</option>
-                            <option value="both">👥 Both</option>
+                            <option value="johannes">🔬 Johannes</option>
+                            <option value="all">👥 All</option>
                         </select>
                     </div>
                     <div className="form-group">

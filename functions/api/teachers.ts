@@ -36,8 +36,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             case 'POST': {
                 const teacher = await request.json() as any;
                 const result = await env.DB.prepare(`
-          INSERT INTO teachers (name, designation, department, school, school_type, email, linkedin_url, request_sent_date, status, notes, created_at, contact_method, response_date, last_contact_date, next_follow_up_date, linkedin_message_sent, email_sent, phone_call_made)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO teachers (name, designation, department, school, school_type, email, linkedin_url, request_sent_date, status, notes, created_at, contact_method, response_date, last_contact_date, next_follow_up_date, linkedin_message_sent, email_sent, phone_call_made, owner, phone_number)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
                     teacher.name,
                     teacher.designation || null,
@@ -56,7 +56,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     teacher.nextFollowUpDate || teacher.next_follow_up_date || null,
                     teacher.linkedinMessageSent || teacher.linkedin_message_sent ? 1 : 0,
                     teacher.emailSent || teacher.email_sent ? 1 : 0,
-                    teacher.phoneCallMade || teacher.phone_call_made ? 1 : 0
+                    teacher.phoneCallMade || teacher.phone_call_made ? 1 : 0,
+                    teacher.owner || null,
+                    teacher.phoneNumber || teacher.phone_number || null
                 ).run();
 
                 return Response.json({ success: true, id: result.meta.last_row_id }, { headers: corsHeaders });
@@ -115,6 +117,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 if (updates.phoneCallMade !== undefined || updates.phone_call_made !== undefined) {
                     setClauses.push('phone_call_made = ?');
                     values.push((updates.phoneCallMade || updates.phone_call_made) ? 1 : 0);
+                }
+                if (updates.owner !== undefined) { setClauses.push('owner = ?'); values.push(updates.owner || null); }
+                if (updates.phoneNumber !== undefined || updates.phone_number !== undefined) {
+                    setClauses.push('phone_number = ?');
+                    values.push(updates.phoneNumber || updates.phone_number || null);
                 }
 
                 if (setClauses.length > 0) {

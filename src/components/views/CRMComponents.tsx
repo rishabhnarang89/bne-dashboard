@@ -1,7 +1,7 @@
 import React from 'react';
 import {
     Building, Linkedin, Mail, Calendar,
-    Clock, Search,
+    Clock, Search, Phone,
     MessageSquare, Trash2, Edit3,
     CheckCircle2, TrendingUp
 } from 'lucide-react';
@@ -45,6 +45,19 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
         if (teacher.linkedinUrl) {
             window.open(teacher.linkedinUrl, '_blank');
         }
+    };
+
+    const handleQuickPhone = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (teacher.phoneNumber) {
+            window.location.href = `tel:${teacher.phoneNumber}`;
+        }
+    };
+
+    const OWNER_CONFIG: Record<string, { emoji: string; label: string; color: string; bg: string }> = {
+        rishabh: { emoji: '👨‍💻', label: 'Rishabh', color: '#3b82f6', bg: '#eff6ff' },
+        tung: { emoji: '🎯', label: 'Tung', color: '#8b5cf6', bg: '#f5f3ff' },
+        johannes: { emoji: '🔬', label: 'Johannes', color: '#f59e0b', bg: '#fffbeb' },
     };
 
     return (
@@ -93,6 +106,11 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
                     </div>
                     <div>
                         <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{teacher.name}</div>
+                        {teacher.designation && (
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontStyle: 'italic', marginBottom: '1px' }}>
+                                {teacher.designation}
+                            </div>
+                        )}
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <Building size={10} /> {teacher.school}
                         </div>
@@ -138,6 +156,21 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
                         {teacher.schoolType}
                     </span>
                 )}
+                {teacher.owner && OWNER_CONFIG[teacher.owner] && (
+                    <span style={{
+                        fontSize: '0.65rem',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: OWNER_CONFIG[teacher.owner].bg,
+                        color: OWNER_CONFIG[teacher.owner].color,
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '2px'
+                    }}>
+                        {OWNER_CONFIG[teacher.owner].emoji} {OWNER_CONFIG[teacher.owner].label}
+                    </span>
+                )}
             </div>
 
             {teacher.lastContactDate && (
@@ -173,6 +206,16 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
                             style={{ color: 'var(--primary)', background: 'var(--primary-light-bg)' }}
                         >
                             <Mail size={14} />
+                        </button>
+                    )}
+                    {teacher.phoneNumber && (
+                        <button
+                            className="btn-icon-sm"
+                            onClick={handleQuickPhone}
+                            title={`Call ${teacher.phoneNumber}`}
+                            style={{ color: '#10b981', background: '#ecfdf5' }}
+                        >
+                            <Phone size={14} />
                         </button>
                     )}
                 </div>
