@@ -8,6 +8,7 @@ import {
     LayoutGrid, List as ListIcon
 } from 'lucide-react';
 import { useToast, InfoBlock, Modal, InterviewTimer, QuestionnaireForm } from '../ui';
+import { useAuth } from '../../contexts/AuthContext';
 import { KanbanBoard, TeacherCard, OutreachStats } from './CRMComponents';
 
 type ViewMode = 'list' | 'detail';
@@ -29,6 +30,7 @@ export const Interviews = () => {
         getInterviewsByTeacher, goals
     } = useValidationData();
     const { showToast } = useToast();
+    const { user } = useAuth();
 
     // View mode
     const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -329,7 +331,7 @@ export const Interviews = () => {
                         </select>
                         <button
                             className="btn btn-primary"
-                            onClick={() => { setEditingTeacher(null); setTeacherForm({ status: 'identified', schoolType: 'Gymnasium' }); setTeacherModalOpen(true); }}
+                            onClick={() => { setEditingTeacher(null); setTeacherForm({ status: 'identified', schoolType: 'Gymnasium', owner: user?.id }); setTeacherModalOpen(true); }}
                         >
                             <Plus size={16} /> Add Teacher
                         </button>

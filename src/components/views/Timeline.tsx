@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useValidationData, WEEKS } from '../../hooks/useValidationData';
 import type { Task, TeamMember } from '../../hooks/useValidationData';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     CheckCircle2, Circle, Clock, Plus, Edit3, Trash2, ChevronDown, ChevronUp,
     AlertTriangle, Calendar, Search, X, Check, ListTodo, PartyPopper
 } from 'lucide-react';
 import { InfoBlock, Modal, useToast } from '../ui';
 
-type FilterType = 'all' | 'incomplete' | 'completed' | 'overdue' | 'today';
+type FilterType = 'all' | 'incomplete' | 'completed' | 'overdue' | 'today' | 'mine';
 type SortType = 'default' | 'dueDate' | 'priority' | 'created';
 
 const PRIORITY_CONFIG = {
@@ -30,6 +31,7 @@ export const Timeline = () => {
         getCurrentWeek, daysUntilDecision, overdueTasks
     } = useValidationData();
     const { showToast } = useToast();
+    const { user } = useAuth();
     const currentWeek = getCurrentWeek();
 
     // UI State
@@ -98,6 +100,12 @@ export const Timeline = () => {
             case 'today': {
                 const today = new Date().toISOString().split('T')[0];
                 result = result.filter(t => t.dueDate === today);
+                break;
+            }
+            case 'mine': {
+                if (user) {
+                    result = result.filter(t => t.assignee === user.id || t.assignee === 'all');
+                }
                 break;
             }
         }
@@ -476,6 +484,7 @@ export const Timeline = () => {
                         </div>
                         <select className="input" value={filter} onChange={e => setFilter(e.target.value as FilterType)} style={{ width: 'auto' }}>
                             <option value="all">All Tasks</option>
+                            <option value="mine">👤 My Tasks</option>
                             <option value="incomplete">Incomplete</option>
                             <option value="completed">Completed</option>
                             <option value="overdue">Overdue</option>

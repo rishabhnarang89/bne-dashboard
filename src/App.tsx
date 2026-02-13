@@ -8,7 +8,9 @@ import { Decision } from './components/views/Decision';
 import { Analytics } from './components/views/Analytics';
 import { Settings } from './components/views/Settings';
 import { Demo } from './components/views/Demo';
+import { LoginScreen } from './components/views/LoginScreen';
 import { ToastProvider } from './components/ui';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const TAB_CONFIG: Record<Tab, { title: string; subtitle: string }> = {
   timeline: { title: 'Week-by-Week Plan', subtitle: 'Track your progress through the 4-week validation sprint.' },
@@ -20,7 +22,7 @@ const TAB_CONFIG: Record<Tab, { title: string; subtitle: string }> = {
   settings: { title: 'Settings', subtitle: 'Customize goals, appearance, and manage your data.' }
 };
 
-function App() {
+const DashboardContent = () => {
   const [activeTab, setActiveTab] = useState<Tab>('timeline');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -40,27 +42,45 @@ function App() {
   const tabConfig = TAB_CONFIG[activeTab];
 
   return (
-    <ToastProvider>
-      <div className="app-container">
-        <Sidebar
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+    <div className="app-container">
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-        <main className="main-content">
-          <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
+      <main className="main-content">
+        <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
 
-          <header style={{ marginBottom: '24px' }}>
-            <h2 style={{ marginBottom: '6px', fontSize: '1.75rem' }}>{tabConfig.title}</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{tabConfig.subtitle}</p>
-          </header>
+        <header style={{ marginBottom: '24px' }}>
+          <h2 style={{ marginBottom: '6px', fontSize: '1.75rem' }}>{tabConfig.title}</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{tabConfig.subtitle}</p>
+        </header>
 
-          {renderContent()}
-        </main>
-      </div>
-    </ToastProvider>
+        {renderContent()}
+      </main>
+    </div>
+  );
+};
+
+const AppGate = () => {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
+  return <DashboardContent />;
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <ToastProvider>
+        <AppGate />
+      </ToastProvider>
+    </AuthProvider>
   );
 }
 

@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import {
     LayoutDashboard, Users, BookOpen, Scale, BarChart3, Settings,
-    Sun, Moon, Download, Menu, X, Clock, Target, Cloud, CloudOff, Loader2, Layout, Activity
+    Sun, Moon, Download, Menu, X, Clock, Target, Cloud, CloudOff, Loader2, Layout, Activity, LogOut
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useValidationData, SPRINT_START, SPRINT_END } from '../hooks/useValidationData';
 import { MiniProgress } from './ui/ProgressRing';
+import { useAuth } from '../contexts/AuthContext';
 
 export type Tab = 'timeline' | 'interviews' | 'build' | 'decision' | 'analytics' | 'demo' | 'settings';
 
@@ -33,6 +34,8 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
         tasks,
         interviews
     } = useValidationData();
+
+    const { user, logout } = useAuth();
 
     // Build activity feed from existing data
     const recentActivity = useMemo(() => {
@@ -176,6 +179,24 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
                         <span style={{ color: 'var(--danger)', marginLeft: 'auto', fontSize: '0.7rem' }}>Error</span>
                     )}
                 </div>
+
+                {/* Logged-in User */}
+                {user && (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '10px 12px',
+                        background: user.bg,
+                        borderRadius: 'var(--radius-sm)',
+                        marginBottom: '16px',
+                        border: `1px solid ${user.color}20`
+                    }}>
+                        <span style={{ fontSize: '1.3rem' }}>{user.emoji}</span>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.85rem', color: user.color }}>{user.name}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Admin</div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Countdown Widget */}
                 <div className="countdown-widget">
@@ -340,6 +361,14 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
                         title="Export data"
                     >
                         <Download size={18} />
+                    </button>
+                    <button
+                        className="btn btn-ghost btn-icon"
+                        onClick={logout}
+                        title="Sign out"
+                        style={{ marginLeft: 'auto' }}
+                    >
+                        <LogOut size={18} />
                     </button>
                 </div>
             </div>
