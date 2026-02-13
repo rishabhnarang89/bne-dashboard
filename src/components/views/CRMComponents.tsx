@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     Building, Linkedin, Mail, Calendar,
     Clock, Search, Phone,
@@ -13,6 +14,7 @@ interface TeacherCardProps {
     onEdit: (teacher: Teacher) => void;
     onDelete: (id: number) => void;
     onClick: (id: number) => void;
+    onUpdate: (id: number, updates: Partial<Teacher>) => void;
 }
 
 export const TeacherCard: React.FC<TeacherCardProps> = ({
@@ -20,9 +22,28 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
     interviewCount,
     onEdit,
     onDelete,
-    onClick
+    onClick,
+    onUpdate
 }) => {
-    const statusColors: Record<TeacherStatus, { color: string; bg: string }> = {
+    const { user } = useAuth();
+    const [showNotes, setShowNotes] = useState(false);
+    const [newNote, setNewNote] = useState('');
+
+    const handleAddNote = (e: React.FormEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!newNote.trim() || !user) return;
+
+        const noteEntry = {
+            date: new Date().toISOString(),
+            author: user.name,
+            text: newNote.trim()
+        };
+
+        const updatedLog = [...(teacher.noteLog || []), noteEntry];
+        onUpdate(teacher.id, { noteLog: updatedLog });
+        setNewNote('');
+    }; const statusColors: Record<TeacherStatus, { color: string; bg: string }> = {
         identified: { color: '#6b7280', bg: '#f3f4f6' },
         request_sent: { color: '#f59e0b', bg: '#fffbeb' },
         connected: { color: '#3b82f6', bg: '#eff6ff' },
@@ -179,6 +200,7 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
                 </div>
             )}
 
+            {/* Action Bar */}
             <div style={{
                 marginTop: '4px',
                 paddingTop: '8px',
@@ -188,6 +210,14 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
                 alignItems: 'center'
             }}>
                 <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                        className={`btn-icon-sm ${showNotes ? 'active' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); setShowNotes(!showNotes); }}
+                        title="Notes"
+                        style={showNotes ? { color: 'var(--primary)', background: 'var(--primary-light-bg)' } : {}}
+                    >
+                        <MessageSquare size={14} />
+                    </button>
                     {teacher.linkedinUrl && (
                         <button
                             className="btn-icon-sm"
@@ -236,6 +266,58 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
                     </button>
                 </div>
             </div>
+
+            {/* Note Log Section */}
+            {showNotes && (
+                <div style={{
+                    marginTop: '8px',
+                    padding: '8px',
+                    background: 'var(--bg-elevated)',
+                    borderRadius: '4px',
+                    border: '1px solid var(--border-light)'
+                }} onClick={e => e.stopPropagation()}>
+                    <div style={{ maxHeight: '150px', overflowY: 'auto', marginBottom: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {teacher.noteLog && teacher.noteLog.length > 0 ? (
+                            [...teacher.noteLog].reverse().map((note, idx) => (
+                                <div key={idx} style={{ fontSize: '0.7rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', marginBottom: '2px' }}>
+                                        <span style={{ fontWeight: 600 }}>{note.author}</span>
+                                        <span>{new Date(note.date).toLocaleDateString()}</span>
+                                    </div>
+                                    <div style={{ color: 'var(--text-main)', whiteSpace: 'pre-wrap' }}>{note.text}</div>
+                                </div>
+                            ))
+                        ) : (
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontStyle: 'italic' }}>No notes yet</div>
+                        )}
+                    </div>
+                    <form onSubmit={handleAddNote} style={{ display: 'flex', gap: '4px' }}>
+                        <input
+                            type="text"
+                            value={newNote}
+                            onChange={e => setNewNote(e.target.value)}
+                            placeholder="Add a note..."
+                            style={{
+                                flex: 1,
+                                fontSize: '0.75rem',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                border: '1px solid var(--border-default)',
+                                background: 'var(--bg-card)',
+                                color: 'var(--text-main)'
+                            }}
+                        />
+                        <button
+                            type="submit"
+                            disabled={!newNote.trim()}
+                            className="btn-icon-sm"
+                            style={{ color: 'var(--primary)', opacity: !newNote.trim() ? 0.5 : 1 }}
+                        >
+                            <TrendingUp size={14} />
+                        </button>
+                    </form>
+                </div>
+            )}
         </div>
     );
 };
@@ -246,6 +328,7 @@ interface KanbanBoardProps {
     onTeacherClick: (id: number) => void;
     onEdit: (teacher: Teacher) => void;
     onDelete: (id: number) => void;
+    onUpdate: (id: number, updates: Partial<Teacher>) => void;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -253,7 +336,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     interviewCounts,
     onTeacherClick,
     onEdit,
-    onDelete
+    onDelete,
+    onUpdate
 }) => {
     const statuses: { id: TeacherStatus; label: string; icon: React.ReactNode }[] = [
         { id: 'identified', label: 'Identified', icon: <Search size={14} /> },
@@ -320,6 +404,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                     onEdit={onEdit}
                                     onDelete={onDelete}
                                     onClick={onTeacherClick}
+                                    onUpdate={onUpdate}
                                 />
                             ))
                         }

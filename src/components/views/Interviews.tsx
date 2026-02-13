@@ -8,7 +8,7 @@ import {
     LayoutGrid, List as ListIcon
 } from 'lucide-react';
 import { useToast, InfoBlock, Modal, InterviewTimer, QuestionnaireForm } from '../ui';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth, USER_PROFILES, type AuthUser } from '../../contexts/AuthContext';
 import { KanbanBoard, TeacherCard, OutreachStats } from './CRMComponents';
 
 type ViewMode = 'list' | 'detail';
@@ -350,6 +350,7 @@ export const Interviews = () => {
                     onTeacherClick={openTeacherDetail}
                     onEdit={openEditTeacher}
                     onDelete={(id) => setDeleteTeacherModalOpen(id)}
+                    onUpdate={updateTeacher}
                 />
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
@@ -361,6 +362,7 @@ export const Interviews = () => {
                             onEdit={openEditTeacher}
                             onDelete={(id) => setDeleteTeacherModalOpen(id)}
                             onClick={openTeacherDetail}
+                            onUpdate={updateTeacher}
                         />
                     ))}
                     {filteredTeachers.length === 0 && (
@@ -521,7 +523,9 @@ export const Interviews = () => {
                                     commitment: 'maybe',
                                     priceReaction: 'neutral',
                                     score: 5,
-                                    setupTime: 120
+                                    setupTime: 120,
+                                    duration: 30, // Added duration default
+                                    interviewer: user?.id // Set default interviewer
                                 });
                                 setInterviewModalOpen(true);
                             }}
@@ -601,6 +605,33 @@ export const Interviews = () => {
                                             }}>
                                                 📋 View Questionnaire Responses ({interview.questions.filter((q: any) => q.answer != null && (typeof q.answer === 'string' ? q.answer.trim() !== '' : Array.isArray(q.answer) ? q.answer.length > 0 : true)).length}/{interview.questions.length} answered)
                                             </summary>
+
+                                            {/* Interviewer Badges */}
+                                            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '12px' }}>
+                                                {interview.interviewer && interview.interviewer !== 'all' && USER_PROFILES[interview.interviewer as AuthUser] && (
+                                                    <div style={{
+                                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                                        fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px',
+                                                        background: USER_PROFILES[interview.interviewer as AuthUser].bg,
+                                                        color: USER_PROFILES[interview.interviewer as AuthUser].color,
+                                                        border: `1px solid ${USER_PROFILES[interview.interviewer as AuthUser].color}30`
+                                                    }}>
+                                                        <span>🎤 {USER_PROFILES[interview.interviewer as AuthUser].emoji} {USER_PROFILES[interview.interviewer as AuthUser].name}</span>
+                                                    </div>
+                                                )}
+                                                {interview.observer && interview.observer !== 'all' && USER_PROFILES[interview.observer as AuthUser] && (
+                                                    <div style={{
+                                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                                        fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px',
+                                                        background: USER_PROFILES[interview.observer as AuthUser].bg,
+                                                        color: USER_PROFILES[interview.observer as AuthUser].color,
+                                                        border: `1px solid ${USER_PROFILES[interview.observer as AuthUser].color}30`
+                                                    }}>
+                                                        <span>👀 {USER_PROFILES[interview.observer as AuthUser].emoji} {USER_PROFILES[interview.observer as AuthUser].name}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             <div style={{
                                                 marginTop: '12px',
                                                 padding: '12px',
@@ -1003,6 +1034,56 @@ export const Interviews = () => {
                                             <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>minutes</div>
                                         </button>
                                     ))}
+                                </div>
+                            </div>
+
+                            {/* Interviewer & Observer Selection */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div>
+                                    <label className="label">Interviewer</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        {Object.values(USER_PROFILES).map(profile => (
+                                            <button
+                                                key={profile.id}
+                                                className={`btn ${interviewForm.interviewer === profile.id ? 'btn-primary' : 'btn-ghost'}`}
+                                                onClick={() => setInterviewForm({ ...interviewForm, interviewer: profile.id })}
+                                                style={{ flex: 1, padding: '8px', fontSize: '0.9rem', opacity: interviewForm.interviewer === profile.id ? 1 : 0.6 }}
+                                                title={profile.name}
+                                            >
+                                                <span style={{ fontSize: '1.2rem', marginRight: '4px' }}>{profile.emoji}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="label">Observer (Optional)</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            className={`btn ${!interviewForm.observer ? 'btn-secondary' : 'btn-ghost'}`}
+                                            onClick={() => setInterviewForm({ ...interviewForm, observer: undefined })}
+                                            style={{ padding: '8px', fontSize: '0.8rem' }}
+                                        >
+                                            None
+                                        </button>
+                                        {Object.values(USER_PROFILES).map(profile => (
+                                            <button
+                                                key={profile.id}
+                                                disabled={interviewForm.interviewer === profile.id}
+                                                className={`btn ${interviewForm.observer === profile.id ? 'btn-primary' : 'btn-ghost'}`}
+                                                onClick={() => setInterviewForm({ ...interviewForm, observer: profile.id })}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '8px',
+                                                    fontSize: '0.9rem',
+                                                    opacity: interviewForm.interviewer === profile.id ? 0.3 : (interviewForm.observer === profile.id ? 1 : 0.6),
+                                                    cursor: interviewForm.interviewer === profile.id ? 'not-allowed' : 'pointer'
+                                                }}
+                                                title={profile.name}
+                                            >
+                                                <span style={{ fontSize: '1.2rem', marginRight: '4px' }}>{profile.emoji}</span>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -35,8 +35,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             case 'POST': {
                 const interview = await request.json();
                 const result = await env.DB.prepare(`
-          INSERT INTO interviews (teacher_id, date, scheduled_date, status, duration, time_spent, setup_time, success, score, commitment, price_reaction, notes, questions, key_insights, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO interviews (teacher_id, date, scheduled_date, status, duration, time_spent, setup_time, success, score, commitment, price_reaction, notes, questions, key_insights, interviewer, observer, created_at, last_modified_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
                     interview.teacher_id,
                     interview.date,
@@ -52,7 +52,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     interview.notes || null,
                     interview.questions ? JSON.stringify(interview.questions) : null,
                     interview.key_insights ? JSON.stringify(interview.key_insights) : null,
-                    interview.created_at || new Date().toISOString()
+                    interview.interviewer || null,
+                    interview.observer || null,
+                    interview.interviewer || null,
+                    interview.observer || null,
+                    interview.created_at || new Date().toISOString(),
+                    interview.lastModifiedBy || interview.last_modified_by || null
                 ).run();
 
                 return Response.json({ success: true, id: result.meta.last_row_id }, { headers: corsHeaders });
@@ -79,6 +84,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 if (updates.notes !== undefined) { setClauses.push('notes = ?'); values.push(updates.notes || null); }
                 if (updates.questions !== undefined) { setClauses.push('questions = ?'); values.push(JSON.stringify(updates.questions)); }
                 if (updates.key_insights !== undefined) { setClauses.push('key_insights = ?'); values.push(JSON.stringify(updates.key_insights)); }
+                if (updates.interviewer !== undefined) { setClauses.push('interviewer = ?'); values.push(updates.interviewer || null); }
+                if (updates.observer !== undefined) { setClauses.push('observer = ?'); values.push(updates.observer || null); }
+                if (updates.lastModifiedBy !== undefined) { setClauses.push('last_modified_by = ?'); values.push(updates.lastModifiedBy || null); }
 
                 if (setClauses.length > 0) {
                     await env.DB.prepare(`UPDATE interviews SET ${setClauses.join(', ')} WHERE id = ?`)

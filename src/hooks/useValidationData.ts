@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { d1Client } from '../lib/d1-client';
+import { useAuth } from '../contexts/AuthContext';
 
 // ============================================================================
 // TYPES
@@ -21,6 +22,7 @@ export interface Task {
     subtasks: Subtask[];
     linkedInterviewId?: number;
     assignee?: TeamMember;
+    lastModifiedBy?: string;
 }
 
 export interface Subtask {
@@ -45,6 +47,7 @@ export interface Teacher {
     requestSentDate?: string;
     status: TeacherStatus;
     notes?: string;
+    noteLog?: { date: string; author: string; text: string }[];
     createdAt: string;
 
     // Outreach tracking fields
@@ -57,6 +60,7 @@ export interface Teacher {
     phoneCallMade?: boolean;         // Track if phone call made
     owner?: TeamMember;              // Account owner (Rishabh, Tung, Johannes)
     phoneNumber?: string;            // Phone number for contact
+    lastModifiedBy?: string;
 }
 
 export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled';
@@ -749,6 +753,9 @@ export interface Interview {
     notes?: string;
     questions?: InterviewData;  // Structured questionnaire responses (v1 or v2)
     keyInsights?: string[];
+    interviewer?: TeamMember;   // Who conducted the interview
+    observer?: TeamMember;      // Who observed (cannot equal interviewer)
+    lastModifiedBy?: string;
 }
 
 export interface WeeklyReflection {
@@ -848,6 +855,7 @@ const createDefaultTasks = (): Task[] => [
 // ============================================================================
 
 export function useValidationData() {
+    const { user } = useAuth();
     const [isOnline, setIsOnline] = useState(true); // D1 is always available
     const [isLoading, setIsLoading] = useState(true);
     const [syncError, setSyncError] = useState<string | null>(null);
@@ -1055,7 +1063,7 @@ export function useValidationData() {
 
         if (isOnline) {
             try {
-                await d1Client.tasks.update(id, updates);
+                await d1Client.tasks.update(id, { ...updates, lastModifiedBy: user?.name });
             } catch (error) {
                 console.error('Sync error:', error);
             }
@@ -1107,7 +1115,8 @@ export function useValidationData() {
         const newTeacher: Teacher = {
             ...teacher,
             id: Date.now(),
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            lastModifiedBy: user?.name
         };
         setTeachers(prev => [...prev, newTeacher]);
         setLastActivity(new Date().toISOString());
@@ -1150,7 +1159,7 @@ export function useValidationData() {
             if (updates.emailSent !== undefined) dbUpdates.email_sent = updates.emailSent;
             if (updates.phoneCallMade !== undefined) dbUpdates.phone_call_made = updates.phoneCallMade;
 
-            await d1Client.teachers.update(id, updates);
+            await d1Client.teachers.update(id, { ...updates, lastModifiedBy: user?.name });
         }
     };
 
@@ -1179,7 +1188,7 @@ export function useValidationData() {
     // ========================================================================
 
     const addInterview = async (interview: Omit<Interview, 'id'>) => {
-        const newInterview = { ...interview, id: Date.now() };
+        const newInterview = { ...interview, id: Date.now(), lastModifiedBy: user?.name };
         setInterviews(prev => [...prev, newInterview]);
         setLastActivity(new Date().toISOString());
 
@@ -1207,7 +1216,7 @@ export function useValidationData() {
 
         if (isOnline) {
             try {
-                await d1Client.interviews.update(id, updates);
+                await d1Client.interviews.update(id, { ...updates, lastModifiedBy: user?.name });
             } catch (error) {
                 console.error('Sync error:', error);
             }

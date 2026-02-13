@@ -28,7 +28,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     ...teacher,
                     linkedin_message_sent: teacher.linkedin_message_sent === 1,
                     email_sent: teacher.email_sent === 1,
-                    phone_call_made: teacher.phone_call_made === 1
+                    phone_call_made: teacher.phone_call_made === 1,
+                    noteLog: teacher.note_log ? JSON.parse(teacher.note_log) : []
                 }));
                 return Response.json(mappedResults, { headers: corsHeaders });
             }
@@ -36,8 +37,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             case 'POST': {
                 const teacher = await request.json() as any;
                 const result = await env.DB.prepare(`
-          INSERT INTO teachers (name, designation, department, school, school_type, email, linkedin_url, request_sent_date, status, notes, created_at, contact_method, response_date, last_contact_date, next_follow_up_date, linkedin_message_sent, email_sent, phone_call_made, owner, phone_number)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO teachers (name, designation, department, school, school_type, email, linkedin_url, request_sent_date, status, notes, note_log, created_at, contact_method, response_date, last_contact_date, next_follow_up_date, linkedin_message_sent, email_sent, phone_call_made, owner, phone_number, last_modified_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
                     teacher.name,
                     teacher.designation || null,
@@ -49,6 +50,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     teacher.requestSentDate || teacher.request_sent_date || null,
                     teacher.status,
                     teacher.notes || null,
+                    teacher.noteLog ? JSON.stringify(teacher.noteLog) : null,
                     teacher.createdAt || teacher.created_at || new Date().toISOString(),
                     teacher.contactMethod || teacher.contact_method || null,
                     teacher.responseDate || teacher.response_date || null,
@@ -58,7 +60,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     teacher.emailSent || teacher.email_sent ? 1 : 0,
                     teacher.phoneCallMade || teacher.phone_call_made ? 1 : 0,
                     teacher.owner || null,
-                    teacher.phoneNumber || teacher.phone_number || null
+                    teacher.owner || null,
+                    teacher.phoneNumber || teacher.phone_number || null,
+                    teacher.lastModifiedBy || teacher.last_modified_by || null
                 ).run();
 
                 return Response.json({ success: true, id: result.meta.last_row_id }, { headers: corsHeaders });
@@ -90,6 +94,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 }
                 if (updates.status !== undefined) { setClauses.push('status = ?'); values.push(updates.status); }
                 if (updates.notes !== undefined) { setClauses.push('notes = ?'); values.push(updates.notes || null); }
+                if (updates.noteLog !== undefined) { setClauses.push('note_log = ?'); values.push(JSON.stringify(updates.noteLog)); }
                 if (updates.contactMethod !== undefined || updates.contact_method !== undefined) {
                     setClauses.push('contact_method = ?');
                     values.push(updates.contactMethod || updates.contact_method || null);
@@ -122,6 +127,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 if (updates.phoneNumber !== undefined || updates.phone_number !== undefined) {
                     setClauses.push('phone_number = ?');
                     values.push(updates.phoneNumber || updates.phone_number || null);
+                }
+                if (updates.lastModifiedBy !== undefined || updates.last_modified_by !== undefined) {
+                    setClauses.push('last_modified_by = ?');
+                    values.push(updates.lastModifiedBy || updates.last_modified_by || null);
                 }
 
                 if (setClauses.length > 0) {

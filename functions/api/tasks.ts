@@ -39,8 +39,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 // Create new task
                 const task = await request.json();
                 await env.DB.prepare(`
-          INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, assignee)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, assignee, last_modified_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
                     task.id,
                     task.title,
@@ -54,7 +54,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     task.is_default ? 1 : 0,
                     JSON.stringify(task.subtasks || []),
                     task.linked_interview_id || null,
-                    task.assignee || null
+                    task.linked_interview_id || null,
+                    task.assignee || null,
+                    task.lastModifiedBy || task.last_modified_by || null
                 ).run();
                 return Response.json({ success: true }, { headers: corsHeaders });
             }
@@ -77,6 +79,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 if (updates.subtasks !== undefined) { setClauses.push('subtasks = ?'); values.push(JSON.stringify(updates.subtasks)); }
                 if (updates.linked_interview_id !== undefined) { setClauses.push('linked_interview_id = ?'); values.push(updates.linked_interview_id || null); }
                 if (updates.assignee !== undefined) { setClauses.push('assignee = ?'); values.push(updates.assignee || null); }
+                if (updates.lastModifiedBy !== undefined) { setClauses.push('last_modified_by = ?'); values.push(updates.lastModifiedBy || null); }
 
                 if (setClauses.length > 0) {
                     await env.DB.prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`)

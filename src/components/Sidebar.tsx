@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
 import {
-    LayoutDashboard, Users, BookOpen, Scale, BarChart3, Settings,
-    Sun, Moon, Download, Menu, X, Clock, Target, Cloud, CloudOff, Loader2, Layout, Activity, LogOut
+    LayoutDashboard, Users, BarChart3, Settings,
+    LogOut, Sun, Moon, Menu, X, BookOpen, Layout, Scale, Cloud, CloudOff, Activity, Clock, Printer, Download, Loader2
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useValidationData, SPRINT_START, SPRINT_END } from '../hooks/useValidationData';
+import { useValidationData } from '../hooks/useValidationData';
 import { MiniProgress } from './ui/ProgressRing';
 import { useAuth } from '../contexts/AuthContext';
 
-export type Tab = 'timeline' | 'interviews' | 'build' | 'decision' | 'analytics' | 'demo' | 'settings';
+export type Tab = 'timeline' | 'interviews' | 'build' | 'decision' | 'analytics' | 'demo' | 'settings' | 'report';
 
 interface SidebarProps {
     activeTab: Tab;
@@ -26,13 +26,14 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
         goals,
         daysUntilDecision,
         daysSinceLastActivity,
-        getCurrentWeek,
         isOnline,
         isLoading,
         syncError,
         teachers,
         tasks,
-        interviews
+        interviews,
+        highScoreCount,
+        pilotCount
     } = useValidationData();
 
     const { user, logout } = useAuth();
@@ -44,9 +45,10 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
         // Teacher additions
         teachers.forEach(t => {
             if (t.createdAt) {
+                const user = t.lastModifiedBy || 'Unknown';
                 items.push({
                     emoji: '👤',
-                    text: `Added: ${t.name}`,
+                    text: `${user} added ${t.name}`,
                     time: t.createdAt,
                     ts: new Date(t.createdAt).getTime()
                 });
@@ -58,9 +60,10 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
             const teacher = teachers.find(t => t.id === i.teacherId);
             const dateStr = i.date;
             if (dateStr) {
+                const user = i.lastModifiedBy || (typeof i.interviewer === 'string' ? i.interviewer : 'Unknown') || 'Unknown';
                 items.push({
                     emoji: '📋',
-                    text: `Interview${teacher ? `: ${teacher.name}` : ''} (${i.score}/10)`,
+                    text: `${user} interviewed ${teacher ? teacher.name : 'Unknown'} (${i.score}/10)`,
                     time: dateStr,
                     ts: new Date(dateStr).getTime()
                 });
@@ -69,9 +72,10 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
 
         // Completed tasks
         tasks.filter(t => t.completed && t.completedAt).forEach(t => {
+            const user = t.lastModifiedBy || 'Unknown';
             items.push({
                 emoji: '✅',
-                text: t.title.length > 28 ? t.title.substring(0, 28) + '…' : t.title,
+                text: `${user} completed ${t.title.length > 20 ? t.title.substring(0, 20) + '…' : t.title}`,
                 time: t.completedAt!,
                 ts: new Date(t.completedAt!).getTime()
             });
@@ -82,20 +86,19 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
         return items.slice(0, 5);
     }, [teachers, interviews, tasks]);
 
-    const currentWeek = getCurrentWeek();
-    // const completedTasks = tasks.filter(t => t.completed).length;
+    const alerts = useMemo(() => {
+        const now = new Date();
+        const overdue = teachers.filter(t => t.nextFollowUpDate && new Date(t.nextFollowUpDate) < now);
+        const stale = teachers.filter(t =>
+            t.status !== 'identified' &&
+            t.status !== 'interviewed' &&
+            t.status !== 'follow_up' &&
+            t.lastContactDate &&
+            (now.getTime() - new Date(t.lastContactDate).getTime()) > 7 * 24 * 60 * 60 * 1000
+        );
+        return { overdue, stale };
+    }, [teachers]);
 
-    // Calculate sprint progress
-    const totalDays = Math.ceil((SPRINT_END.getTime() - SPRINT_START.getTime()) / (1000 * 60 * 60 * 24));
-    const elapsedDays = Math.max(0, Math.ceil((new Date().getTime() - SPRINT_START.getTime()) / (1000 * 60 * 60 * 24)));
-    const sprintProgress = Math.min(100, (elapsedDays / totalDays) * 100);
-
-    const weekLabels: Record<number, string> = {
-        0: 'Pre-Sprint',
-        1: 'Week 1: Prototype',
-        2: 'Week 2-3: Interviews',
-        4: 'Week 4: Decision'
-    };
 
     const navSections = [
         {
@@ -110,6 +113,7 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
             items: [
                 { id: 'interviews', label: 'Interview Tool', icon: Users },
                 { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+                { id: 'report', label: 'Report', icon: Printer },
                 { id: 'decision', label: 'Go/No-Go', icon: Scale },
                 { id: 'demo', label: 'Demo', icon: Layout },
             ]
@@ -264,48 +268,78 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
                     ))}
                 </nav>
 
-                {/* Sprint Progress */}
-                <div style={{
-                    padding: '16px',
-                    background: 'var(--bg-card)',
-                    borderRadius: 'var(--radius-md)',
-                    marginTop: 'auto',
-                    border: '1px solid var(--border-light)'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                        <Target size={16} color="var(--primary)" />
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Sprint Progress</span>
-                    </div>
-
-                    <div style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '8px' }}>
-                        {weekLabels[currentWeek]}
-                    </div>
+                {/* Goal Progress */}
+                <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'var(--text-muted)',
+                        marginBottom: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                    }}>
+                        Goal Progress
+                        <span style={{ fontSize: '0.7rem', fontWeight: 400 }}>Deadline: Feb 20</span>
+                    </h3>
 
                     <MiniProgress
+                        label="🎯 Interviews"
                         value={completedInterviews.length}
                         max={goals.targetInterviews}
-                        label="Interviews"
                     />
-
-                    <div style={{
-                        height: '4px',
-                        background: 'var(--border-default)',
-                        borderRadius: '2px',
-                        marginTop: '12px'
-                    }}>
-                        <div style={{
-                            width: `${sprintProgress}%`,
-                            height: '100%',
-                            background: 'var(--primary)',
-                            borderRadius: '2px',
-                            transition: 'width 0.3s ease'
-                        }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '6px' }}>
-                        <span>Jan 13</span>
-                        <span>Feb 9</span>
-                    </div>
+                    <MiniProgress
+                        label="⭐ High Scores (9+)"
+                        value={highScoreCount}
+                        max={goals.targetHighScores}
+                    />
+                    <MiniProgress
+                        label="🚀 Pilot Partners"
+                        value={pilotCount}
+                        max={goals.targetPilots}
+                    />
                 </div>
+
+                {/* Alerts Widget */}
+                {(alerts.overdue.length > 0 || alerts.stale.length > 0) && (
+                    <div style={{ marginBottom: '24px' }}>
+                        <h3 style={{
+                            fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '12px',
+                            display: 'flex', justifyContent: 'space-between'
+                        }}>
+                            Attention Needed
+                            <span style={{ background: 'var(--danger)', color: 'white', padding: '0 6px', borderRadius: '10px', fontSize: '0.7rem' }}>
+                                {alerts.overdue.length + alerts.stale.length}
+                            </span>
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {alerts.overdue.slice(0, 3).map(t => (
+                                <div key={t.id} style={{
+                                    padding: '8px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '6px',
+                                    fontSize: '0.75rem', color: '#991b1b', cursor: 'pointer'
+                                }} onClick={() => handleTabChange('interviews')}>
+                                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <Clock size={12} /> Follow-up Overdue
+                                    </div>
+                                    <div style={{ marginTop: '2px' }}>{t.name}</div>
+                                </div>
+                            ))}
+                            {alerts.stale.slice(0, 3).map(t => (
+                                <div key={t.id} style={{
+                                    padding: '8px', background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '6px',
+                                    fontSize: '0.75rem', color: '#92400e', cursor: 'pointer'
+                                }} onClick={() => handleTabChange('interviews')}>
+                                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <Clock size={12} /> Stale Contact ({Math.floor((Date.now() - new Date(t.lastContactDate!).getTime()) / (86400000))}d)
+                                    </div>
+                                    <div style={{ marginTop: '2px' }}>{t.name}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Activity Feed */}
                 {recentActivity.length > 0 && (

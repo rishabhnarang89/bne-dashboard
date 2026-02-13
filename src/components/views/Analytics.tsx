@@ -161,6 +161,71 @@ export const Analytics = () => {
         )
         : null;
 
+    // ========================================================================
+    // QUALITATIVE INSIGHTS
+    // ========================================================================
+    const insights = useMemo(() => {
+        const barriers: Record<string, number> = {};
+        const features: string[] = [];
+        const schoolTypeScores: Record<string, { total: number; count: number }> = {};
+
+        completedInterviews.forEach(interview => {
+            // School Type Correlation
+            const teacher = teachers.find(t => t.id === interview.teacherId);
+            if (teacher && teacher.schoolType) {
+                if (!schoolTypeScores[teacher.schoolType]) schoolTypeScores[teacher.schoolType] = { total: 0, count: 0 };
+                schoolTypeScores[teacher.schoolType].total += interview.score;
+                schoolTypeScores[teacher.schoolType].count++;
+            }
+
+            // Extract questions
+            if (interview.questions && Array.isArray(interview.questions)) {
+                // Barriers (q10w - adoption, q8q - no digital tools)
+                const q10w = interview.questions.find((q: any) => q.id === 'q10w');
+                const q8q = interview.questions.find((q: any) => q.id === 'q8q');
+
+                if (q10w && q10w.answer) {
+                    const ans = q10w.answer as string;
+                    barriers[ans] = (barriers[ans] || 0) + 1;
+                }
+                if (q8q && q8q.answer) {
+                    const ans = q8q.answer as string;
+                    barriers[ans] = (barriers[ans] || 0) + 1;
+                }
+
+                // Features (q10v)
+                const q10v = interview.questions.find((q: any) => q.id === 'q10v');
+                if (q10v && q10v.answer && typeof q10v.answer === 'string' && q10v.answer.length > 3) {
+                    features.push(q10v.answer);
+                }
+            }
+        });
+
+        // Format barriers for chart
+        const barrierData = Object.entries(barriers)
+            .map(([label, value]) => ({
+                label: label === 'price' || label === 'expensive' ? 'Price / Budget' :
+                    label === 'features' ? 'Missing Features' :
+                        label === 'curriculum' ? 'Curriculum Fit' :
+                            label === 'complex' ? 'Too Complex' :
+                                label === 'no_equipment' ? 'No Equipment' : label,
+                value,
+                color: '#ef4444'
+            }))
+            .sort((a, b) => b.value - a.value);
+
+        // Format school scores
+        const schoolScoreData = Object.entries(schoolTypeScores)
+            .map(([type, data]) => ({
+                label: type,
+                value: parseFloat((data.total / data.count).toFixed(1)),
+                color: '#3b82f6'
+            }))
+            .sort((a, b) => b.value - a.value);
+
+        return { barrierData, features: features.slice(0, 5), schoolScoreData };
+    }, [completedInterviews, teachers]);
+
     return (
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
             <InfoBlock icon={<BarChart3 size={20} />} title="Analytics Dashboard" description="Track your progress with visual analytics." variant="info" />
@@ -334,6 +399,46 @@ export const Analytics = () => {
                 <div className="glass-card"><h4><BarChart3 size={18} /> Score Distribution</h4><SimpleBarChart data={scoreDistribution} height={120} /></div>
                 <div className="glass-card"><h4><Users size={18} /> Commitment</h4><SimpleBarChart data={commitmentData} height={120} /></div>
                 <div className="glass-card"><h4><Target size={18} /> Price (€{goals.pricePoint})</h4><SimpleBarChart data={priceData} height={120} /></div>
+            </div>
+
+            {/* Qualitative Insights */}
+            <h3 style={{ marginTop: '32px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <TrendingUp size={22} color="var(--primary)" /> Qualitative Insights
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+                <div className="glass-card">
+                    <h4>🚧 Top Barriers to Adoption</h4>
+                    {insights.barrierData.length > 0 ? (
+                        <SimpleBarChart data={insights.barrierData} height={160} />
+                    ) : (
+                        <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>No data on barriers yet.</div>
+                    )}
+                </div>
+                <div className="glass-card">
+                    <h4>🏫 Score by School Type</h4>
+                    {insights.schoolScoreData.length > 0 ? (
+                        <SimpleBarChart data={insights.schoolScoreData} height={160} />
+                    ) : (
+                        <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>No data yet.</div>
+                    )}
+                </div>
+                <div className="glass-card" style={{ gridColumn: '1/-1' }}>
+                    <h4>✨ Feature Requests & Feedback</h4>
+                    {insights.features.length > 0 ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
+                            {insights.features.map((feat, i) => (
+                                <div key={i} style={{
+                                    padding: '12px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)',
+                                    fontSize: '0.9rem', borderLeft: '3px solid var(--accent)'
+                                }}>
+                                    "{feat}"
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>No feature requests recorded yet.</div>
+                    )}
+                </div>
             </div>
         </div>
     );
