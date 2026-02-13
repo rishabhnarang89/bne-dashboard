@@ -6,14 +6,13 @@
 -- ============================================================================
 
 -- Add new columns to teachers table
-ALTER TABLE teachers
-ADD COLUMN IF NOT EXISTS contact_method TEXT CHECK (contact_method IN ('linkedin', 'email', 'phone', 'in-person', 'other')),
-ADD COLUMN IF NOT EXISTS response_date DATE,
-ADD COLUMN IF NOT EXISTS last_contact_date DATE,
-ADD COLUMN IF NOT EXISTS next_follow_up_date DATE,
-ADD COLUMN IF NOT EXISTS linkedin_message_sent BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS email_sent BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS phone_call_made BOOLEAN DEFAULT FALSE;
+ALTER TABLE teachers ADD COLUMN contact_method TEXT CHECK (contact_method IN ('linkedin', 'email', 'phone', 'in-person', 'other'));
+ALTER TABLE teachers ADD COLUMN response_date DATE;
+ALTER TABLE teachers ADD COLUMN last_contact_date DATE;
+ALTER TABLE teachers ADD COLUMN next_follow_up_date DATE;
+ALTER TABLE teachers ADD COLUMN linkedin_message_sent BOOLEAN DEFAULT FALSE;
+ALTER TABLE teachers ADD COLUMN email_sent BOOLEAN DEFAULT FALSE;
+ALTER TABLE teachers ADD COLUMN phone_call_made BOOLEAN DEFAULT FALSE;
 
 -- Add indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_teachers_next_follow_up ON teachers(next_follow_up_date);
