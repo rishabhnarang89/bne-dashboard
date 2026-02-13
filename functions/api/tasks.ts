@@ -57,6 +57,22 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     task.assignee || null,
                     task.lastModifiedBy || task.last_modified_by || null
                 ).run();
+
+                // Log Activity
+                try {
+                    await env.DB.prepare(`
+                        INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                        VALUES (?, 'CREATE', 'TASK', ?, ?, ?)
+                    `).bind(
+                        task.lastModifiedBy || task.last_modified_by || 'Unknown User',
+                        task.id, // Task ID is manual in this table? Or auto? The INSERT above uses `task.id`.
+                        task.title,
+                        JSON.stringify({ priority: task.priority, due_date: task.due_date })
+                    ).run();
+                } catch (logError) {
+                    console.error('Failed to log activity:', logError);
+                }
+
                 return Response.json({ success: true }, { headers: corsHeaders });
             }
 
@@ -84,6 +100,27 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     await env.DB.prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`)
                         .bind(...values, taskId)
                         .run();
+
+                    // Log Activity
+                    try {
+                        const userName = updates.lastModifiedBy || updates.last_modified_by || 'Unknown User';
+                        // Check if completed status changed specially
+                        let actionType = 'UPDATE';
+                        if (updates.completed === true) actionType = 'COMPLETE';
+
+                        await env.DB.prepare(`
+                            INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                            VALUES (?, ?, 'TASK', ?, ?, ?)
+                        `).bind(
+                            userName,
+                            actionType,
+                            taskId,
+                            updates.title || `Task ID ${taskId}`,
+                            JSON.stringify(updates)
+                        ).run();
+                    } catch (logError) {
+                        console.error('Failed to log activity:', logError);
+                    }
                 }
 
                 return Response.json({ success: true }, { headers: corsHeaders });

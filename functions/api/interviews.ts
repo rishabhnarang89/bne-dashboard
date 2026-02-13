@@ -58,6 +58,21 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     interview.lastModifiedBy || interview.last_modified_by || null
                 ).run();
 
+                // Log Activity
+                try {
+                    await env.DB.prepare(`
+                        INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                        VALUES (?, 'CREATE', 'INTERVIEW', ?, ?, ?)
+                    `).bind(
+                        interview.lastModifiedBy || interview.last_modified_by || 'Unknown User',
+                        result.meta.last_row_id,
+                        `Interview for Teacher ID ${interview.teacher_id}`,
+                        JSON.stringify({ status: interview.status, date: interview.date })
+                    ).run();
+                } catch (logError) {
+                    console.error('Failed to log activity:', logError);
+                }
+
                 return Response.json({ success: true, id: result.meta.last_row_id }, { headers: corsHeaders });
             }
 
@@ -90,6 +105,22 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     await env.DB.prepare(`UPDATE interviews SET ${setClauses.join(', ')} WHERE id = ?`)
                         .bind(...values, interviewId)
                         .run();
+
+                    // Log Activity
+                    try {
+                        const userName = updates.lastModifiedBy || updates.last_modified_by || 'Unknown User';
+                        await env.DB.prepare(`
+                            INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                            VALUES (?, 'UPDATE', 'INTERVIEW', ?, ?, ?)
+                        `).bind(
+                            userName,
+                            interviewId,
+                            `Interview ID ${interviewId}`,
+                            JSON.stringify(updates)
+                        ).run();
+                    } catch (logError) {
+                        console.error('Failed to log activity:', logError);
+                    }
                 }
 
                 return Response.json({ success: true }, { headers: corsHeaders });

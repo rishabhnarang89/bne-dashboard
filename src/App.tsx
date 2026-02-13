@@ -24,9 +24,12 @@ const TAB_CONFIG: Record<Tab, { title: string; subtitle: string }> = {
   settings: { title: 'Settings', subtitle: 'Customize goals, appearance, and manage your data.' }
 };
 
+import { ActivityFeed } from './components/ActivityFeed';
+
 const DashboardContent = () => {
   const [activeTab, setActiveTab] = useState<Tab>('timeline');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -51,6 +54,12 @@ const DashboardContent = () => {
         onTabChange={setActiveTab}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        onToggleActivity={() => setActivityOpen(true)}
+      />
+
+      <ActivityFeed
+        isOpen={activityOpen}
+        onClose={() => setActivityOpen(false)}
       />
 
       <main className="main-content">

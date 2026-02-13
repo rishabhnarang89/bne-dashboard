@@ -64,6 +64,22 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     teacher.lastModifiedBy || teacher.last_modified_by || null
                 ).run();
 
+                // Log Activity
+                try {
+                    await env.DB.prepare(`
+                        INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                        VALUES (?, 'CREATE', 'TEACHER', ?, ?, ?)
+                    `).bind(
+                        teacher.lastModifiedBy || teacher.last_modified_by || 'Unknown User',
+                        result.meta.last_row_id,
+                        teacher.name,
+                        JSON.stringify({ school: teacher.school, status: teacher.status })
+                    ).run();
+                } catch (logError) {
+                    console.error('Failed to log activity:', logError);
+                    // Don't fail the request if logging fails
+                }
+
                 return Response.json({ success: true, id: result.meta.last_row_id }, { headers: corsHeaders });
             }
 
@@ -136,6 +152,25 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     await env.DB.prepare(`UPDATE teachers SET ${setClauses.join(', ')} WHERE id = ?`)
                         .bind(...values, teacherId)
                         .run();
+
+                    // Log Activity
+                    try {
+                        const userName = updates.lastModifiedBy || updates.last_modified_by || 'Unknown User';
+                        // Ideally we'd fetch the name here if not provided, but for now use "Teacher ID X" if name not in updates
+                        const entityName = updates.name || `Teacher ID ${teacherId}`;
+
+                        await env.DB.prepare(`
+                            INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                            VALUES (?, 'UPDATE', 'TEACHER', ?, ?, ?)
+                        `).bind(
+                            userName,
+                            teacherId,
+                            entityName,
+                            JSON.stringify(updates) // Store the changes
+                        ).run();
+                    } catch (logError) {
+                        console.error('Failed to log activity:', logError);
+                    }
                 }
 
                 return Response.json({ success: true }, { headers: corsHeaders });

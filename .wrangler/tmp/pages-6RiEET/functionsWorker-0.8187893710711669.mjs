@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// ../.wrangler/tmp/bundle-sXGqTs/checked-fetch.js
+// ../.wrangler/tmp/bundle-VAdi0T/checked-fetch.js
 var urls = /* @__PURE__ */ new Set();
 function checkURL(request, init) {
   const url = request instanceof URL ? request : new URL(
@@ -27,8 +27,40 @@ globalThis.fetch = new Proxy(globalThis.fetch, {
   }
 });
 
-// api/goals.ts
+// api/activity.ts
 var onRequest = /* @__PURE__ */ __name(async (context) => {
+  const { request, env } = context;
+  const { method } = request;
+  const url = new URL(request.url);
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type"
+  };
+  if (method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+  try {
+    if (method === "GET") {
+      const limit = parseInt(url.searchParams.get("limit") || "50");
+      const { results } = await env.DB.prepare(
+        "SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT ?"
+      ).bind(limit).all();
+      const parsedResults = results.map((log) => ({
+        ...log,
+        details: log.details && (log.details.startsWith("{") || log.details.startsWith("[")) ? JSON.parse(log.details) : log.details
+      }));
+      return Response.json(parsedResults, { headers: corsHeaders });
+    }
+    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+  } catch (error) {
+    console.error("Activity API error:", error);
+    return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
+  }
+}, "onRequest");
+
+// api/goals.ts
+var onRequest2 = /* @__PURE__ */ __name(async (context) => {
   const { request, env } = context;
   const { method } = request;
   const corsHeaders = {
@@ -93,7 +125,7 @@ var onRequest = /* @__PURE__ */ __name(async (context) => {
 }, "onRequest");
 
 // api/interviews.ts
-var onRequest2 = /* @__PURE__ */ __name(async (context) => {
+var onRequest3 = /* @__PURE__ */ __name(async (context) => {
   const { request, env } = context;
   const { method } = request;
   const url = new URL(request.url);
@@ -141,6 +173,19 @@ var onRequest2 = /* @__PURE__ */ __name(async (context) => {
           interview.created_at || (/* @__PURE__ */ new Date()).toISOString(),
           interview.lastModifiedBy || interview.last_modified_by || null
         ).run();
+        try {
+          await env.DB.prepare(`
+                        INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                        VALUES (?, 'CREATE', 'INTERVIEW', ?, ?, ?)
+                    `).bind(
+            interview.lastModifiedBy || interview.last_modified_by || "Unknown User",
+            result.meta.last_row_id,
+            `Interview for Teacher ID ${interview.teacher_id}`,
+            JSON.stringify({ status: interview.status, date: interview.date })
+          ).run();
+        } catch (logError) {
+          console.error("Failed to log activity:", logError);
+        }
         return Response.json({ success: true, id: result.meta.last_row_id }, { headers: corsHeaders });
       }
       case "PUT": {
@@ -218,6 +263,20 @@ var onRequest2 = /* @__PURE__ */ __name(async (context) => {
         }
         if (setClauses.length > 0) {
           await env.DB.prepare(`UPDATE interviews SET ${setClauses.join(", ")} WHERE id = ?`).bind(...values, interviewId).run();
+          try {
+            const userName = updates.lastModifiedBy || updates.last_modified_by || "Unknown User";
+            await env.DB.prepare(`
+                            INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                            VALUES (?, 'UPDATE', 'INTERVIEW', ?, ?, ?)
+                        `).bind(
+              userName,
+              interviewId,
+              `Interview ID ${interviewId}`,
+              JSON.stringify(updates)
+            ).run();
+          } catch (logError) {
+            console.error("Failed to log activity:", logError);
+          }
         }
         return Response.json({ success: true }, { headers: corsHeaders });
       }
@@ -236,7 +295,7 @@ var onRequest2 = /* @__PURE__ */ __name(async (context) => {
 }, "onRequest");
 
 // api/tasks.ts
-var onRequest3 = /* @__PURE__ */ __name(async (context) => {
+var onRequest4 = /* @__PURE__ */ __name(async (context) => {
   const { request, env } = context;
   const { method } = request;
   const url = new URL(request.url);
@@ -281,6 +340,20 @@ var onRequest3 = /* @__PURE__ */ __name(async (context) => {
           task.assignee || null,
           task.lastModifiedBy || task.last_modified_by || null
         ).run();
+        try {
+          await env.DB.prepare(`
+                        INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                        VALUES (?, 'CREATE', 'TASK', ?, ?, ?)
+                    `).bind(
+            task.lastModifiedBy || task.last_modified_by || "Unknown User",
+            task.id,
+            // Task ID is manual in this table? Or auto? The INSERT above uses `task.id`.
+            task.title,
+            JSON.stringify({ priority: task.priority, due_date: task.due_date })
+          ).run();
+        } catch (logError) {
+          console.error("Failed to log activity:", logError);
+        }
         return Response.json({ success: true }, { headers: corsHeaders });
       }
       case "PUT": {
@@ -334,6 +407,23 @@ var onRequest3 = /* @__PURE__ */ __name(async (context) => {
         }
         if (setClauses.length > 0) {
           await env.DB.prepare(`UPDATE tasks SET ${setClauses.join(", ")} WHERE id = ?`).bind(...values, taskId).run();
+          try {
+            const userName = updates.lastModifiedBy || updates.last_modified_by || "Unknown User";
+            let actionType = "UPDATE";
+            if (updates.completed === true) actionType = "COMPLETE";
+            await env.DB.prepare(`
+                            INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                            VALUES (?, ?, 'TASK', ?, ?, ?)
+                        `).bind(
+              userName,
+              actionType,
+              taskId,
+              updates.title || `Task ID ${taskId}`,
+              JSON.stringify(updates)
+            ).run();
+          } catch (logError) {
+            console.error("Failed to log activity:", logError);
+          }
         }
         return Response.json({ success: true }, { headers: corsHeaders });
       }
@@ -352,7 +442,7 @@ var onRequest3 = /* @__PURE__ */ __name(async (context) => {
 }, "onRequest");
 
 // api/teachers.ts
-var onRequest4 = /* @__PURE__ */ __name(async (context) => {
+var onRequest5 = /* @__PURE__ */ __name(async (context) => {
   const { request, env } = context;
   const { method } = request;
   const url = new URL(request.url);
@@ -407,6 +497,19 @@ var onRequest4 = /* @__PURE__ */ __name(async (context) => {
           teacher.phoneNumber || teacher.phone_number || null,
           teacher.lastModifiedBy || teacher.last_modified_by || null
         ).run();
+        try {
+          await env.DB.prepare(`
+                        INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                        VALUES (?, 'CREATE', 'TEACHER', ?, ?, ?)
+                    `).bind(
+            teacher.lastModifiedBy || teacher.last_modified_by || "Unknown User",
+            result.meta.last_row_id,
+            teacher.name,
+            JSON.stringify({ school: teacher.school, status: teacher.status })
+          ).run();
+        } catch (logError) {
+          console.error("Failed to log activity:", logError);
+        }
         return Response.json({ success: true, id: result.meta.last_row_id }, { headers: corsHeaders });
       }
       case "PUT": {
@@ -500,6 +603,22 @@ var onRequest4 = /* @__PURE__ */ __name(async (context) => {
         }
         if (setClauses.length > 0) {
           await env.DB.prepare(`UPDATE teachers SET ${setClauses.join(", ")} WHERE id = ?`).bind(...values, teacherId).run();
+          try {
+            const userName = updates.lastModifiedBy || updates.last_modified_by || "Unknown User";
+            const entityName = updates.name || `Teacher ID ${teacherId}`;
+            await env.DB.prepare(`
+                            INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                            VALUES (?, 'UPDATE', 'TEACHER', ?, ?, ?)
+                        `).bind(
+              userName,
+              teacherId,
+              entityName,
+              JSON.stringify(updates)
+              // Store the changes
+            ).run();
+          } catch (logError) {
+            console.error("Failed to log activity:", logError);
+          }
         }
         return Response.json({ success: true }, { headers: corsHeaders });
       }
@@ -520,32 +639,39 @@ var onRequest4 = /* @__PURE__ */ __name(async (context) => {
 // ../.wrangler/tmp/pages-6RiEET/functionsRoutes-0.9214193492318417.mjs
 var routes = [
   {
-    routePath: "/api/goals",
+    routePath: "/api/activity",
     mountPath: "/api",
     method: "",
     middlewares: [],
     modules: [onRequest]
   },
   {
-    routePath: "/api/interviews",
+    routePath: "/api/goals",
     mountPath: "/api",
     method: "",
     middlewares: [],
     modules: [onRequest2]
   },
   {
-    routePath: "/api/tasks",
+    routePath: "/api/interviews",
     mountPath: "/api",
     method: "",
     middlewares: [],
     modules: [onRequest3]
   },
   {
-    routePath: "/api/teachers",
+    routePath: "/api/tasks",
     mountPath: "/api",
     method: "",
     middlewares: [],
     modules: [onRequest4]
+  },
+  {
+    routePath: "/api/teachers",
+    mountPath: "/api",
+    method: "",
+    middlewares: [],
+    modules: [onRequest5]
   }
 ];
 
@@ -1036,7 +1162,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-sXGqTs/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-VAdi0T/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -1068,7 +1194,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-sXGqTs/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-VAdi0T/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

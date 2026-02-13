@@ -15,9 +15,10 @@ interface SidebarProps {
     onTabChange: (tab: Tab) => void;
     isOpen: boolean;
     onClose: () => void;
+    onToggleActivity: () => void;
 }
 
-export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProps) => {
+export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose, onToggleActivity }: SidebarProps) => {
     const {
         darkMode,
         setDarkMode,
@@ -30,61 +31,13 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
         isLoading,
         syncError,
         teachers,
-        tasks,
-        interviews,
         highScoreCount,
         pilotCount
     } = useValidationData();
 
     const { user, logout } = useAuth();
 
-    // Build activity feed from existing data
-    const recentActivity = useMemo(() => {
-        const items: { emoji: string; text: string; time: string; ts: number }[] = [];
 
-        // Teacher additions
-        teachers.forEach(t => {
-            if (t.createdAt) {
-                const user = t.lastModifiedBy || 'Unknown';
-                items.push({
-                    emoji: '👤',
-                    text: `${user} added ${t.name}`,
-                    time: t.createdAt,
-                    ts: new Date(t.createdAt).getTime()
-                });
-            }
-        });
-
-        // Completed interviews
-        interviews.filter(i => i.status === 'completed').forEach(i => {
-            const teacher = teachers.find(t => t.id === i.teacherId);
-            const dateStr = i.date;
-            if (dateStr) {
-                const user = i.lastModifiedBy || (typeof i.interviewer === 'string' ? i.interviewer : 'Unknown') || 'Unknown';
-                items.push({
-                    emoji: '📋',
-                    text: `${user} interviewed ${teacher ? teacher.name : 'Unknown'} (${i.score}/10)`,
-                    time: dateStr,
-                    ts: new Date(dateStr).getTime()
-                });
-            }
-        });
-
-        // Completed tasks
-        tasks.filter(t => t.completed && t.completedAt).forEach(t => {
-            const user = t.lastModifiedBy || 'Unknown';
-            items.push({
-                emoji: '✅',
-                text: `${user} completed ${t.title.length > 20 ? t.title.substring(0, 20) + '…' : t.title}`,
-                time: t.completedAt!,
-                ts: new Date(t.completedAt!).getTime()
-            });
-        });
-
-        // Sort by timestamp descending
-        items.sort((a, b) => b.ts - a.ts);
-        return items.slice(0, 5);
-    }, [teachers, interviews, tasks]);
 
     const alerts = useMemo(() => {
         const now = new Date();
@@ -341,39 +294,6 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
                     </div>
                 )}
 
-                {/* Activity Feed */}
-                {recentActivity.length > 0 && (
-                    <div style={{
-                        padding: '12px',
-                        background: 'var(--bg-card)',
-                        borderRadius: 'var(--radius-md)',
-                        marginTop: '12px',
-                        border: '1px solid var(--border-light)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                            <Activity size={14} color="var(--primary)" />
-                            <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>Recent Activity</span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {recentActivity.map((item, i) => {
-                                const ago = getTimeAgo(item.ts);
-                                return (
-                                    <div key={i} style={{
-                                        display: 'flex', alignItems: 'center', gap: '8px',
-                                        fontSize: '0.75rem', color: 'var(--text-muted)',
-                                        padding: '4px 0',
-                                        borderBottom: i < recentActivity.length - 1 ? '1px solid var(--border-light)' : 'none'
-                                    }}>
-                                        <span>{item.emoji}</span>
-                                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-main)' }}>{item.text}</span>
-                                        <span style={{ flexShrink: 0, fontSize: '0.65rem' }}>{ago}</span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
                 {/* Quick Actions */}
                 <div style={{
                     display: 'flex',
@@ -382,6 +302,13 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
                     paddingTop: '16px',
                     borderTop: '1px solid var(--border-light)'
                 }}>
+                    <button
+                        className="btn btn-ghost btn-icon"
+                        onClick={onToggleActivity}
+                        title="Activity Feed"
+                    >
+                        <Activity size={18} />
+                    </button>
                     <button
                         className="btn btn-ghost btn-icon"
                         onClick={() => setDarkMode(!darkMode)}
@@ -410,19 +337,7 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
     );
 };
 
-// Helper: time ago
-const getTimeAgo = (ts: number): string => {
-    const diff = Date.now() - ts;
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'now';
-    if (mins < 60) return `${mins}m`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h`;
-    const days = Math.floor(hrs / 24);
-    if (days < 7) return `${days}d`;
-    const weeks = Math.floor(days / 7);
-    return `${weeks}w`;
-};
+
 
 // Mobile header component
 export const MobileHeader = ({ onMenuClick }: { onMenuClick: () => void }) => {
