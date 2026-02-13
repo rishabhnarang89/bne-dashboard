@@ -141,26 +141,6 @@ export const Analytics = () => {
         }))
         , [ownerMetrics]);
 
-    if (completedInterviews.length === 0) {
-        return (
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                <InfoBlock icon={<BarChart3 size={20} />} title="Analytics Dashboard" description="Complete at least one interview to see your analytics." variant="info" />
-                <div className="empty-state" style={{ marginTop: '40px' }}>
-                    <div className="empty-state-icon"><BarChart3 size={36} /></div>
-                    <div className="empty-state-title">No Data Yet</div>
-                    <div className="empty-state-description">Complete some interviews to see analytics.</div>
-                </div>
-            </div>
-        );
-    }
-
-    // Find top performer
-    const topPerformer = ownerMetrics.length > 0
-        ? ownerMetrics.reduce((best, curr) =>
-            curr.interviewCount > best.interviewCount ? curr : best
-        )
-        : null;
-
     // ========================================================================
     // QUALITATIVE INSIGHTS
     // ========================================================================
@@ -225,6 +205,26 @@ export const Analytics = () => {
 
         return { barrierData, features: features.slice(0, 5), schoolScoreData };
     }, [completedInterviews, teachers]);
+
+    if (completedInterviews.length === 0) {
+        return (
+            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                <InfoBlock icon={<BarChart3 size={20} />} title="Analytics Dashboard" description="Complete at least one interview to see your analytics." variant="info" />
+                <div className="empty-state" style={{ marginTop: '40px' }}>
+                    <div className="empty-state-icon"><BarChart3 size={36} /></div>
+                    <div className="empty-state-title">No Data Yet</div>
+                    <div className="empty-state-description">Complete some interviews to see analytics.</div>
+                </div>
+            </div>
+        );
+    }
+
+    // Find top performer
+    const topPerformer = ownerMetrics.length > 0
+        ? ownerMetrics.reduce((best, curr) =>
+            curr.interviewCount > best.interviewCount ? curr : best
+        )
+        : null;
 
     return (
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
