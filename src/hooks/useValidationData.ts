@@ -858,7 +858,17 @@ export function useValidationData() {
     const [interviews, setInterviews] = useState<Interview[]>([]);
     const [reflections, setReflections] = useState<WeeklyReflection[]>([]);
     const [goals, setGoals] = useState<GoalSettings>(DEFAULT_GOALS);
-    const [darkMode, setDarkMode] = useState<boolean>(false);
+    const [darkMode, setDarkMode] = useState<boolean>(() => {
+        try {
+            const saved = localStorage.getItem('bne_darkMode');
+            if (saved) {
+                const value = JSON.parse(saved);
+                document.documentElement.setAttribute('data-theme', value ? 'dark' : 'light');
+                return value;
+            }
+        } catch { /* ignore */ }
+        return false;
+    });
     const [lastActivity, setLastActivity] = useState<string>(new Date().toISOString());
 
     // ========================================================================

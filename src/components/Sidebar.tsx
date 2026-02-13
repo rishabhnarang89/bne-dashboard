@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import {
     LayoutDashboard, Users, BookOpen, Scale, BarChart3, Settings,
-    Sun, Moon, Download, Menu, X, Clock, Target, Cloud, CloudOff, Loader2, Layout
+    Sun, Moon, Download, Menu, X, Clock, Target, Cloud, CloudOff, Loader2, Layout, Activity
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useValidationData, SPRINT_START, SPRINT_END } from '../hooks/useValidationData';
@@ -27,8 +28,56 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
         getCurrentWeek,
         isOnline,
         isLoading,
-        syncError
+        syncError,
+        teachers,
+        tasks,
+        interviews
     } = useValidationData();
+
+    // Build activity feed from existing data
+    const recentActivity = useMemo(() => {
+        const items: { emoji: string; text: string; time: string; ts: number }[] = [];
+
+        // Teacher additions
+        teachers.forEach(t => {
+            if (t.createdAt) {
+                items.push({
+                    emoji: '👤',
+                    text: `Added: ${t.name}`,
+                    time: t.createdAt,
+                    ts: new Date(t.createdAt).getTime()
+                });
+            }
+        });
+
+        // Completed interviews
+        interviews.filter(i => i.status === 'completed').forEach(i => {
+            const teacher = teachers.find(t => t.id === i.teacherId);
+            const dateStr = i.date;
+            if (dateStr) {
+                items.push({
+                    emoji: '📋',
+                    text: `Interview${teacher ? `: ${teacher.name}` : ''} (${i.score}/10)`,
+                    time: dateStr,
+                    ts: new Date(dateStr).getTime()
+                });
+            }
+        });
+
+        // Completed tasks
+        tasks.filter(t => t.completed && t.completedAt).forEach(t => {
+            items.push({
+                emoji: '✅',
+                text: t.title.length > 28 ? t.title.substring(0, 28) + '…' : t.title,
+                time: t.completedAt!,
+                ts: new Date(t.completedAt!).getTime()
+            });
+        });
+
+        // Sort by timestamp descending
+        items.sort((a, b) => b.ts - a.ts);
+        return items.slice(0, 5);
+    }, [teachers, interviews, tasks]);
 
     const currentWeek = getCurrentWeek();
     // const completedTasks = tasks.filter(t => t.completed).length;
@@ -237,6 +286,39 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
                     </div>
                 </div>
 
+                {/* Activity Feed */}
+                {recentActivity.length > 0 && (
+                    <div style={{
+                        padding: '12px',
+                        background: 'var(--bg-card)',
+                        borderRadius: 'var(--radius-md)',
+                        marginTop: '12px',
+                        border: '1px solid var(--border-light)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                            <Activity size={14} color="var(--primary)" />
+                            <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>Recent Activity</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {recentActivity.map((item, i) => {
+                                const ago = getTimeAgo(item.ts);
+                                return (
+                                    <div key={i} style={{
+                                        display: 'flex', alignItems: 'center', gap: '8px',
+                                        fontSize: '0.75rem', color: 'var(--text-muted)',
+                                        padding: '4px 0',
+                                        borderBottom: i < recentActivity.length - 1 ? '1px solid var(--border-light)' : 'none'
+                                    }}>
+                                        <span>{item.emoji}</span>
+                                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-main)' }}>{item.text}</span>
+                                        <span style={{ flexShrink: 0, fontSize: '0.65rem' }}>{ago}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 {/* Quick Actions */}
                 <div style={{
                     display: 'flex',
@@ -263,6 +345,20 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProp
             </div>
         </>
     );
+};
+
+// Helper: time ago
+const getTimeAgo = (ts: number): string => {
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'now';
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d`;
+    const weeks = Math.floor(days / 7);
+    return `${weeks}w`;
 };
 
 // Mobile header component

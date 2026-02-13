@@ -1,7 +1,23 @@
 import { useMemo } from 'react';
 import { useValidationData } from '../../hooks/useValidationData';
-import { BarChart3, TrendingUp, Clock, Users, PieChart, Target } from 'lucide-react';
+import { BarChart3, TrendingUp, Clock, Users, PieChart, Target, Crown } from 'lucide-react';
 import { InfoBlock, InterviewScoreTrend, SchoolTypeBreakdown, SetupTimeImprovement, SimpleBarChart } from '../ui';
+
+const OWNER_CONFIG: Record<string, { emoji: string; label: string; color: string; bg: string }> = {
+    rishabh: { emoji: '👨‍💻', label: 'Rishabh', color: '#3b82f6', bg: '#eff6ff' },
+    tung: { emoji: '🎯', label: 'Tung', color: '#8b5cf6', bg: '#f5f3ff' },
+    johannes: { emoji: '🔬', label: 'Johannes', color: '#f59e0b', bg: '#fffbeb' },
+    unassigned: { emoji: '❓', label: 'Unassigned', color: '#6b7280', bg: '#f3f4f6' }
+};
+
+const STATUS_LABELS: Record<string, { label: string; emoji: string }> = {
+    identified: { label: 'Identified', emoji: '🔍' },
+    request_sent: { label: 'Sent', emoji: '📤' },
+    connected: { label: 'Connected', emoji: '🤝' },
+    scheduled: { label: 'Scheduled', emoji: '📅' },
+    interviewed: { label: 'Done', emoji: '✅' },
+    follow_up: { label: 'Follow-up', emoji: '🔄' }
+};
 
 export const Analytics = () => {
     const { interviews, completedInterviews, teachers, goals, avgScore, avgSetupTime, pilotCount, highScoreCount } = useValidationData();
@@ -39,6 +55,92 @@ export const Analytics = () => {
         }));
     }, [completedInterviews]);
 
+    // ========================================================================
+    // OWNER-BASED ANALYTICS
+    // ========================================================================
+
+    const ownerMetrics = useMemo(() => {
+        // Build a map of teacherId → owner
+        const teacherOwnerMap = new Map<number, string>();
+        teachers.forEach(t => teacherOwnerMap.set(t.id, t.owner || 'unassigned'));
+
+        // Group teachers by owner
+        const ownerTeachers: Record<string, typeof teachers> = {};
+        teachers.forEach(t => {
+            const owner = t.owner || 'unassigned';
+            if (!ownerTeachers[owner]) ownerTeachers[owner] = [];
+            ownerTeachers[owner].push(t);
+        });
+
+        // Group completed interviews by owner (via teacher)
+        const ownerInterviews: Record<string, typeof completedInterviews> = {};
+        completedInterviews.forEach(i => {
+            const owner = teacherOwnerMap.get(i.teacherId) || 'unassigned';
+            if (!ownerInterviews[owner]) ownerInterviews[owner] = [];
+            ownerInterviews[owner].push(i);
+        });
+
+        // Compute per-owner metrics
+        const owners = ['rishabh', 'tung', 'johannes', 'unassigned'];
+        return owners.map(owner => {
+            const ownedTeachers = ownerTeachers[owner] || [];
+            const ownedInterviews = ownerInterviews[owner] || [];
+            const avgScoreVal = ownedInterviews.length > 0
+                ? ownedInterviews.reduce((sum, i) => sum + i.score, 0) / ownedInterviews.length
+                : 0;
+            const pilots = ownedInterviews.filter(i => i.commitment === 'pilot').length;
+            const highScores = ownedInterviews.filter(i => i.score >= 8).length;
+
+            // Pipeline breakdown
+            const pipeline: Record<string, number> = {};
+            Object.keys(STATUS_LABELS).forEach(s => pipeline[s] = 0);
+            ownedTeachers.forEach(t => pipeline[t.status] = (pipeline[t.status] || 0) + 1);
+
+            // Conversion rate: identified → interviewed
+            const interviewed = ownedTeachers.filter(t => t.status === 'interviewed').length;
+            const conversionRate = ownedTeachers.length > 0
+                ? (interviewed / ownedTeachers.length) * 100
+                : 0;
+
+            return {
+                owner,
+                config: OWNER_CONFIG[owner],
+                teacherCount: ownedTeachers.length,
+                interviewCount: ownedInterviews.length,
+                avgScore: avgScoreVal,
+                pilots,
+                highScores,
+                pipeline,
+                conversionRate
+            };
+        }).filter(o => o.teacherCount > 0 || o.interviewCount > 0); // Only show owners with data
+    }, [teachers, completedInterviews]);
+
+    // Chart data for owner comparison
+    const ownerInterviewChartData = useMemo(() =>
+        ownerMetrics.map(o => ({
+            label: o.config.emoji,
+            value: o.interviewCount,
+            color: o.config.color
+        }))
+        , [ownerMetrics]);
+
+    const ownerScoreChartData = useMemo(() =>
+        ownerMetrics.map(o => ({
+            label: o.config.emoji,
+            value: parseFloat(o.avgScore.toFixed(1)),
+            color: o.config.color
+        }))
+        , [ownerMetrics]);
+
+    const ownerTeacherChartData = useMemo(() =>
+        ownerMetrics.map(o => ({
+            label: o.config.emoji,
+            value: o.teacherCount,
+            color: o.config.color
+        }))
+        , [ownerMetrics]);
+
     if (completedInterviews.length === 0) {
         return (
             <div style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -52,10 +154,18 @@ export const Analytics = () => {
         );
     }
 
+    // Find top performer
+    const topPerformer = ownerMetrics.length > 0
+        ? ownerMetrics.reduce((best, curr) =>
+            curr.interviewCount > best.interviewCount ? curr : best
+        )
+        : null;
+
     return (
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
             <InfoBlock icon={<BarChart3 size={20} />} title="Analytics Dashboard" description="Track your progress with visual analytics." variant="info" />
 
+            {/* Overall Stats */}
             <div className="stats-grid" style={{ marginTop: '24px' }}>
                 <div className="stat-card"><div className="stat-label">Avg Score</div><div className="stat-value">{avgScore.toFixed(1)}</div></div>
                 <div className="stat-card"><div className="stat-label">Avg Setup</div><div className="stat-value">{Math.round(avgSetupTime)}s</div></div>
@@ -63,6 +173,160 @@ export const Analytics = () => {
                 <div className="stat-card"><div className="stat-label">Pilots</div><div className="stat-value">{pilotCount}</div></div>
             </div>
 
+            {/* ============================================================ */}
+            {/* TEAM PERFORMANCE SECTION */}
+            {/* ============================================================ */}
+            {ownerMetrics.length > 0 && (
+                <>
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        marginTop: '32px', marginBottom: '16px'
+                    }}>
+                        <Crown size={22} color="var(--primary)" />
+                        <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Team Performance</h3>
+                        {topPerformer && topPerformer.interviewCount > 0 && (
+                            <span style={{
+                                marginLeft: 'auto', fontSize: '0.8rem',
+                                padding: '4px 12px', borderRadius: '12px',
+                                background: topPerformer.config.bg,
+                                color: topPerformer.config.color,
+                                fontWeight: 700
+                            }}>
+                                🏆 {topPerformer.config.label} leads with {topPerformer.interviewCount} interviews
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Per-Owner Scorecards */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${Math.min(ownerMetrics.length, 3)}, 1fr)`,
+                        gap: '16px', marginBottom: '24px'
+                    }}>
+                        {ownerMetrics.map(o => (
+                            <div key={o.owner} className="glass-card" style={{
+                                padding: '20px',
+                                borderLeft: `4px solid ${o.config.color}`
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                                    <span style={{ fontSize: '1.5rem' }}>{o.config.emoji}</span>
+                                    <div>
+                                        <div style={{ fontWeight: 700, fontSize: '1rem' }}>{o.config.label}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                            {o.teacherCount} teachers · {o.interviewCount} interviews
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Mini stats grid */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <MiniStat
+                                        label="Avg Score"
+                                        value={o.avgScore > 0 ? o.avgScore.toFixed(1) : '—'}
+                                        color={o.avgScore >= 8 ? '#10b981' : o.avgScore >= 5 ? '#f59e0b' : o.avgScore > 0 ? '#ef4444' : '#6b7280'}
+                                    />
+                                    <MiniStat
+                                        label="High Scores"
+                                        value={o.highScores}
+                                        color={o.highScores > 0 ? '#10b981' : '#6b7280'}
+                                    />
+                                    <MiniStat
+                                        label="Pilots"
+                                        value={o.pilots}
+                                        color={o.pilots > 0 ? '#10b981' : '#6b7280'}
+                                    />
+                                    <MiniStat
+                                        label="Conversion"
+                                        value={`${Math.round(o.conversionRate)}%`}
+                                        color={o.conversionRate >= 50 ? '#10b981' : o.conversionRate > 0 ? '#f59e0b' : '#6b7280'}
+                                    />
+                                </div>
+
+                                {/* Pipeline mini bars */}
+                                <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border-light)' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '8px' }}>
+                                        Pipeline
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '2px', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                                        {Object.entries(o.pipeline).map(([status, count]) => {
+                                            if (count === 0) return null;
+                                            const pct = (count / o.teacherCount) * 100;
+                                            const colors: Record<string, string> = {
+                                                identified: '#94a3b8',
+                                                request_sent: '#60a5fa',
+                                                connected: '#34d399',
+                                                scheduled: '#a78bfa',
+                                                interviewed: '#10b981',
+                                                follow_up: '#f59e0b'
+                                            };
+                                            return (
+                                                <div
+                                                    key={status}
+                                                    title={`${STATUS_LABELS[status]?.label || status}: ${count}`}
+                                                    style={{
+                                                        width: `${pct}%`,
+                                                        background: colors[status] || '#6b7280',
+                                                        minWidth: '4px'
+                                                    }}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                                        {Object.entries(o.pipeline).map(([status, count]) => {
+                                            if (count === 0) return null;
+                                            return (
+                                                <span key={status} style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                                    {STATUS_LABELS[status]?.emoji} {count}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Owner Comparison Charts */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+                        <div className="glass-card">
+                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Users size={18} /> Interviews by Owner
+                            </h4>
+                            <SimpleBarChart data={ownerInterviewChartData} height={120} />
+                            <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '4px' }}>
+                                {ownerMetrics.map(o => (
+                                    <span key={o.owner} style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{o.config.label}</span>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="glass-card">
+                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <TrendingUp size={18} /> Avg Score by Owner
+                            </h4>
+                            <SimpleBarChart data={ownerScoreChartData} height={120} />
+                            <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '4px' }}>
+                                {ownerMetrics.map(o => (
+                                    <span key={o.owner} style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{o.config.label}</span>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="glass-card">
+                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Target size={18} /> Teachers by Owner
+                            </h4>
+                            <SimpleBarChart data={ownerTeacherChartData} height={120} />
+                            <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '4px' }}>
+                                {ownerMetrics.map(o => (
+                                    <span key={o.owner} style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{o.config.label}</span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Original Charts */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '24px' }}>
                 <div className="glass-card"><h4><TrendingUp size={18} /> Score Trend</h4><InterviewScoreTrend interviews={interviews} /></div>
                 <div className="glass-card"><h4><Clock size={18} /> Setup Time</h4><SetupTimeImprovement interviews={interviews} /></div>
@@ -74,3 +338,14 @@ export const Analytics = () => {
         </div>
     );
 };
+
+// Mini stat component for owner scorecards
+const MiniStat = ({ label, value, color }: { label: string; value: string | number; color: string }) => (
+    <div style={{
+        padding: '8px', background: 'var(--bg-card)',
+        borderRadius: 'var(--radius-sm)', textAlign: 'center'
+    }}>
+        <div style={{ fontSize: '1.1rem', fontWeight: 800, color }}>{value}</div>
+        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>{label}</div>
+    </div>
+);
