@@ -44,7 +44,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     teacher.designation || null,
                     teacher.department || null,
                     teacher.school,
-                    teacher.schoolType || teacher.school_type, // Handle both camelCase and snake_case
+                    teacher.schoolType || teacher.school_type || null, // Handle both camelCase and snake_case
                     teacher.email || null,
                     teacher.linkedinUrl || teacher.linkedin_url || null,
                     teacher.requestSentDate || teacher.request_sent_date || null,
@@ -59,7 +59,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     teacher.linkedinMessageSent || teacher.linkedin_message_sent ? 1 : 0,
                     teacher.emailSent || teacher.email_sent ? 1 : 0,
                     teacher.phoneCallMade || teacher.phone_call_made ? 1 : 0,
-                    teacher.owner || null,
                     teacher.owner || null,
                     teacher.phoneNumber || teacher.phone_number || null,
                     teacher.lastModifiedBy || teacher.last_modified_by || null

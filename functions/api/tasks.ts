@@ -54,7 +54,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     task.is_default ? 1 : 0,
                     JSON.stringify(task.subtasks || []),
                     task.linked_interview_id || null,
-                    task.linked_interview_id || null,
                     task.assignee || null,
                     task.lastModifiedBy || task.last_modified_by || null
                 ).run();
