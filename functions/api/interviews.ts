@@ -128,7 +128,30 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
             case 'DELETE': {
                 const interviewId = url.searchParams.get('id');
+
+                // Fetch interview info before deleting for the activity log
+                let entityName = `Interview ID ${interviewId}`;
+                try {
+                    const existing = await env.DB.prepare('SELECT teacher_id FROM interviews WHERE id = ?').bind(interviewId).first() as any;
+                    if (existing) entityName = `Interview for Teacher ID ${existing.teacher_id}`;
+                } catch (_) { /* ignore */ }
+
                 await env.DB.prepare('DELETE FROM interviews WHERE id = ?').bind(interviewId).run();
+
+                // Log Activity
+                try {
+                    await env.DB.prepare(`
+                        INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                        VALUES (?, 'DELETE', 'INTERVIEW', ?, ?, NULL)
+                    `).bind(
+                        url.searchParams.get('user') || 'Unknown User',
+                        interviewId,
+                        entityName
+                    ).run();
+                } catch (logError) {
+                    console.error('Failed to log activity:', logError);
+                }
+
                 return Response.json({ success: true }, { headers: corsHeaders });
             }
 

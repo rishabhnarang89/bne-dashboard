@@ -59,8 +59,10 @@ export const d1Client = {
             });
             return res.json();
         },
-        async delete(id: string) {
-            const res = await fetch(`${API_BASE}/tasks?id=${id}`, { method: 'DELETE' });
+        async delete(id: string, user?: string) {
+            const params = new URLSearchParams({ id });
+            if (user) params.set('user', user);
+            const res = await fetch(`${API_BASE}/tasks?${params}`, { method: 'DELETE' });
             return res.json();
         }
     },
@@ -87,8 +89,10 @@ export const d1Client = {
             });
             return res.json();
         },
-        async delete(id: number) {
-            const res = await fetch(`${API_BASE}/teachers?id=${id}`, { method: 'DELETE' });
+        async delete(id: number, user?: string) {
+            const params = new URLSearchParams({ id: String(id) });
+            if (user) params.set('user', user);
+            const res = await fetch(`${API_BASE}/teachers?${params}`, { method: 'DELETE' });
             return res.json();
         }
     },
@@ -115,8 +119,10 @@ export const d1Client = {
             });
             return res.json();
         },
-        async delete(id: number) {
-            const res = await fetch(`${API_BASE}/interviews?id=${id}`, { method: 'DELETE' });
+        async delete(id: number, user?: string) {
+            const params = new URLSearchParams({ id: String(id) });
+            if (user) params.set('user', user);
+            const res = await fetch(`${API_BASE}/interviews?${params}`, { method: 'DELETE' });
             return res.json();
         }
     },

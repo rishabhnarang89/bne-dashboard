@@ -129,7 +129,30 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             case 'DELETE': {
                 // Delete task
                 const taskId = url.searchParams.get('id');
+
+                // Fetch task title before deleting for the activity log
+                let taskTitle = `Task ID ${taskId}`;
+                try {
+                    const existing = await env.DB.prepare('SELECT title FROM tasks WHERE id = ?').bind(taskId).first() as any;
+                    if (existing) taskTitle = existing.title;
+                } catch (_) { /* ignore */ }
+
                 await env.DB.prepare('DELETE FROM tasks WHERE id = ?').bind(taskId).run();
+
+                // Log Activity
+                try {
+                    await env.DB.prepare(`
+                        INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                        VALUES (?, 'DELETE', 'TASK', ?, ?, NULL)
+                    `).bind(
+                        url.searchParams.get('user') || 'Unknown User',
+                        taskId,
+                        taskTitle
+                    ).run();
+                } catch (logError) {
+                    console.error('Failed to log activity:', logError);
+                }
+
                 return Response.json({ success: true }, { headers: corsHeaders });
             }
 

@@ -1075,7 +1075,7 @@ export function useValidationData() {
 
         if (isOnline) {
             try {
-                await d1Client.tasks.delete(id);
+                await d1Client.tasks.delete(id, user?.name);
             } catch (error) {
                 console.error('Sync error:', error);
             }
@@ -1173,7 +1173,7 @@ export function useValidationData() {
 
         if (isOnline) {
             try {
-                await d1Client.teachers.delete(id);
+                await d1Client.teachers.delete(id, user?.name);
             } catch (error) {
                 console.error('Sync error:', error);
             }
@@ -1228,7 +1228,7 @@ export function useValidationData() {
 
         if (isOnline) {
             try {
-                await d1Client.interviews.delete(id);
+                await d1Client.interviews.delete(id, user?.name);
             } catch (error) {
                 console.error('Sync error:', error);
             }
