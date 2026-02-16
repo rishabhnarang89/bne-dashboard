@@ -908,6 +908,65 @@ export function useValidationData() {
     // INITIAL DATA LOAD
     // ========================================================================
 
+
+    // Default Knowledge Cards
+    const DEFAULT_KNOWLEDGE_CARDS: KnowledgeCard[] = [
+        {
+            id: 'card_outreach',
+            title: 'Outreach & Interviews',
+            description: 'Scripts, email templates, and interview notes.',
+            icon: 'Users',
+            color: 'orange',
+            sortOrder: 0,
+            items: []
+        },
+        {
+            id: 'card_sources',
+            title: 'Important Sources',
+            description: 'Competitor analysis, curriculum standards, and research.',
+            icon: 'Globe',
+            color: 'blue',
+            sortOrder: 1,
+            items: []
+        },
+        {
+            id: 'card_exist',
+            title: 'EXIST Application',
+            description: 'Application drafts, business plan, and university documents.',
+            icon: 'FileText',
+            color: 'purple',
+            sortOrder: 2,
+            items: []
+        },
+        {
+            id: 'card_prototype',
+            title: 'Prototype Development',
+            description: 'Hardware specs, sensor datasheets, and 3D print files.',
+            icon: 'Cpu', // Lucid icon name
+            color: 'green',
+            sortOrder: 3,
+            items: []
+        },
+        {
+            id: 'card_pilot',
+            title: 'Pilot Schools',
+            description: 'LOI templates, onboarding checklists, and feedback forms.',
+            icon: 'School', // Lucid icon name
+            color: 'red',
+            sortOrder: 4,
+            items: []
+        },
+        {
+            id: 'card_marketing',
+            title: 'Marketing & Assets',
+            description: 'Logos, pitch decks, and social proof quotes.',
+            icon: 'Megaphone', // Lucid icon name
+            color: 'gray',
+            sortOrder: 5,
+            items: []
+        }
+    ];
+
     useEffect(() => {
         const loadData = async () => {
             setIsLoading(true);
@@ -945,11 +1004,28 @@ export function useValidationData() {
                     setGoals(goalsData);
                 }
 
+                // Knowledge Hub Seeding
                 if (Array.isArray(knowledgeData)) {
-                    // Map API snake_case to camelCase if needed, but likely API returns as is or we need to align.
-                    // The API returns { ...card, items: [...] }. 
-                    // Let's ensure types match.
-                    setKnowledgeCards(knowledgeData);
+                    // Identify missing default cards
+                    const existingCardIds = new Set(knowledgeData.map((c: any) => c.id));
+                    const missingDefaults = DEFAULT_KNOWLEDGE_CARDS.filter(c => !existingCardIds.has(c.id));
+
+                    if (missingDefaults.length > 0) {
+                        const seededCards = [...knowledgeData];
+
+                        for (const card of missingDefaults) {
+                            await fetch('/api/knowledge', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ entityType: 'card', ...card })
+                            });
+                            // Add timestamp for local state
+                            seededCards.push({ ...card, createdAt: new Date().toISOString() });
+                        }
+                        setKnowledgeCards(seededCards);
+                    } else {
+                        setKnowledgeCards(knowledgeData);
+                    }
                 }
 
                 setIsOnline(true);
