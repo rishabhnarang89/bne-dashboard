@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useValidationData } from '../../hooks/useValidationData';
 import type { KnowledgeCard, KnowledgeItem } from '../../hooks/useValidationData';
 import {
-    Plus, Edit3, Trash2, Link as LinkIcon, FileText, Image, LayoutGrid
+    Folder, Plus, Edit3, Trash2, Link as LinkIcon, FileText, Image, LayoutGrid,
+    Search, Filter, Grid, List, Share2, MoreHorizontal, File, FileSpreadsheet, StickyNote
 } from 'lucide-react';
 import { InfoBlock, Modal, useToast } from '../ui';
 import * as Icons from 'lucide-react';
@@ -15,13 +16,42 @@ export const KnowledgeHub = () => {
     const { showToast } = useToast();
 
     // UI state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [cardModalOpen, setCardModalOpen] = useState(false);
     const [itemModalOpen, setItemModalOpen] = useState(false);
     const [currentCard, setCurrentCard] = useState<Partial<KnowledgeCard>>({});
     const [currentItem, setCurrentItem] = useState<Partial<KnowledgeItem>>({});
     const [activeCardId, setActiveCardId] = useState<string | null>(null);
 
-    // Dynamic Icon Renderer
+    // Filter cards based on search
+    const filteredCards = knowledgeCards.filter(card =>
+        card.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        card.items.some(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
+    // Helpers
+    const getResourceColor = (type: string) => {
+        switch (type) {
+            case 'link': return 'text-blue-500';
+            case 'google_drive': return 'text-green-500';
+            case 'file': return 'text-red-500'; // PDF usually red, generic file maybe gray
+            case 'note': return 'text-yellow-500';
+            default: return 'text-gray-500';
+        }
+    };
+
+    const getResourceIcon = (type: string) => {
+        switch (type) {
+            case 'link': return LinkIcon;
+            case 'google_drive': return FileSpreadsheet; // Approx for Sheets/Docs
+            case 'file': return FileText;
+            case 'note': return StickyNote;
+            default: return File;
+        }
+    };
+
+    // Dynamic Icon Renderer for Card Header
     const IconRenderer = ({ name, size = 20, color = 'currentColor' }: { name: string, size?: number, color?: string }) => {
         const IconComponent = (Icons as any)[name] || Icons.Folder;
         return <IconComponent size={size} color={color} />;
