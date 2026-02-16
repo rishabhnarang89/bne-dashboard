@@ -34,10 +34,27 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     'SELECT * FROM knowledge_items ORDER BY sort_order, created_at DESC'
                 ).all();
 
-                // Map items to cards
+                // Map items to cards with camelCase properties
                 const structuredData = cards.map((card: any) => ({
-                    ...card,
-                    items: items.filter((item: any) => item.card_id === card.id)
+                    id: card.id,
+                    title: card.title,
+                    description: card.description,
+                    icon: card.icon,
+                    color: card.color,
+                    sortOrder: card.sort_order, // Map snake_case to camelCase
+                    createdAt: card.created_at,
+                    items: items
+                        .filter((item: any) => item.card_id === card.id)
+                        .map((item: any) => ({
+                            id: item.id,
+                            cardId: item.card_id, // Map snake_case to camelCase
+                            type: item.type,
+                            title: item.title,
+                            url: item.url,
+                            content: item.content,
+                            sortOrder: item.sort_order, // Map snake_case to camelCase
+                            createdAt: item.created_at
+                        }))
                 }));
 
                 return Response.json(structuredData, { headers: corsHeaders });
