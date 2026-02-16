@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
 import {
     LayoutDashboard, Users, BarChart3, Settings,
-    LogOut, Sun, Moon, Menu, X, BookOpen, Layout, Scale, Cloud, CloudOff, Activity, Clock, Printer, Download, Loader2
+    LogOut, Sun, Moon, Menu, X, BookOpen, Layout, Scale, Cloud, CloudOff, Activity, Clock, Printer, Download, Loader2, LayoutGrid
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useValidationData } from '../hooks/useValidationData';
 import { MiniProgress } from './ui/ProgressRing';
 import { useAuth } from '../contexts/AuthContext';
 
-export type Tab = 'timeline' | 'interviews' | 'build' | 'decision' | 'analytics' | 'demo' | 'settings' | 'report';
+export type Tab = 'timeline' | 'interviews' | 'build' | 'decision' | 'analytics' | 'demo' | 'settings' | 'report' | 'knowledge';
 
 interface SidebarProps {
     activeTab: Tab;
@@ -58,6 +58,7 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose, onToggleActiv
             label: 'Planning',
             items: [
                 { id: 'timeline', label: 'Tasks', icon: LayoutDashboard },
+                { id: 'knowledge', label: 'Knowledge Hub', icon: LayoutGrid },
                 { id: 'build', label: 'Build Guide', icon: BookOpen },
             ]
         },

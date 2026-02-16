@@ -777,6 +777,28 @@ export interface GoalSettings {
     pricePoint: number;
 }
 
+export interface KnowledgeItem {
+    id: string;
+    cardId: string;
+    type: 'link' | 'file' | 'note' | 'google_drive';
+    title: string;
+    url?: string;
+    content?: string;
+    sortOrder: number;
+    createdAt?: string;
+}
+
+export interface KnowledgeCard {
+    id: string;
+    title: string;
+    description?: string;
+    icon: string;
+    color: string;
+    sortOrder: number;
+    items: KnowledgeItem[];
+    createdAt?: string;
+}
+
 // ============================================================================
 // CONSTANTS
 // ============================================================================
@@ -868,6 +890,7 @@ export function useValidationData() {
     const [interviews, setInterviews] = useState<Interview[]>([]);
     const [reflections, setReflections] = useState<WeeklyReflection[]>([]);
     const [goals, setGoals] = useState<GoalSettings>(DEFAULT_GOALS);
+    const [knowledgeCards, setKnowledgeCards] = useState<KnowledgeCard[]>([]);
     const [darkMode, setDarkMode] = useState<boolean>(() => {
         try {
             const saved = localStorage.getItem('bne_darkMode');
@@ -891,11 +914,12 @@ export function useValidationData() {
 
             try {
                 // Load from D1
-                const [tasksData, teachersData, interviewsData, goalsData] = await Promise.all([
+                const [tasksData, teachersData, interviewsData, goalsData, knowledgeData] = await Promise.all([
                     d1Client.tasks.getAll(),
                     d1Client.teachers.getAll(),
                     d1Client.interviews.getAll(),
-                    d1Client.goals.get()
+                    d1Client.goals.get(),
+                    fetch('/api/knowledge').then(res => res.ok ? res.json() : [])
                 ]);
 
                 // Sync new default tasks if they don't exist
@@ -919,6 +943,13 @@ export function useValidationData() {
 
                 if (goalsData && Object.keys(goalsData).length > 0) {
                     setGoals(goalsData);
+                }
+
+                if (Array.isArray(knowledgeData)) {
+                    // Map API snake_case to camelCase if needed, but likely API returns as is or we need to align.
+                    // The API returns { ...card, items: [...] }. 
+                    // Let's ensure types match.
+                    setKnowledgeCards(knowledgeData);
                 }
 
                 setIsOnline(true);
@@ -1408,6 +1439,132 @@ export function useValidationData() {
     }, [isOnline]);
 
     // ========================================================================
+    // KNOWLEDGE HUB ACTIONS
+    // ========================================================================
+
+    const addKnowledgeCard = async (card: Omit<KnowledgeCard, 'items' | 'createdAt'>) => {
+        const newCard: KnowledgeCard = { ...card, items: [], createdAt: new Date().toISOString() };
+        setKnowledgeCards(prev => [...prev, newCard]);
+
+        if (isOnline) {
+            try {
+                await fetch('/api/knowledge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entityType: 'card', ...card })
+                });
+            } catch (error) {
+                console.error('KB Sync error:', error);
+            }
+        }
+    };
+
+    const updateKnowledgeCard = async (id: string, updates: Partial<KnowledgeCard>) => {
+        setKnowledgeCards(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+
+        if (isOnline) {
+            try {
+                await fetch('/api/knowledge', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entityType: 'card', id, ...updates })
+                });
+            } catch (error) {
+                console.error('KB Sync error:', error);
+            }
+        }
+    };
+
+    const deleteKnowledgeCard = async (id: string) => {
+        setKnowledgeCards(prev => prev.filter(c => c.id !== id));
+
+        if (isOnline) {
+            try {
+                await fetch(`/api/knowledge?entityType=card&id=${id}`, { method: 'DELETE' });
+            } catch (error) {
+                console.error('KB Sync error:', error);
+            }
+        }
+    };
+
+    const addKnowledgeItem = async (item: KnowledgeItem) => {
+        setKnowledgeCards(prev => prev.map(c => {
+            if (c.id === item.cardId) {
+                return { ...c, items: [...c.items, item] };
+            }
+            return c;
+        }));
+
+        if (isOnline) {
+            try {
+                await fetch('/api/knowledge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        entityType: 'item',
+                        id: item.id,
+                        card_id: item.cardId,
+                        type: item.type,
+                        title: item.title,
+                        url: item.url,
+                        content: item.content,
+                        sort_order: item.sortOrder
+                    })
+                });
+            } catch (error) {
+                console.error('KB Sync error:', error);
+            }
+        }
+    };
+
+    const updateKnowledgeItem = async (id: string, cardId: string, updates: Partial<KnowledgeItem>) => {
+        setKnowledgeCards(prev => prev.map(c => {
+            if (c.id === cardId) {
+                return { ...c, items: c.items.map(i => i.id === id ? { ...i, ...updates } : i) };
+            }
+            return c;
+        }));
+
+        if (isOnline) {
+            try {
+                // Map camelCase to snake_case for API
+                const apiUpdates: any = { entityType: 'item', id };
+                if (updates.cardId) apiUpdates.card_id = updates.cardId;
+                if (updates.type) apiUpdates.type = updates.type;
+                if (updates.title) apiUpdates.title = updates.title;
+                if (updates.url) apiUpdates.url = updates.url;
+                if (updates.content) apiUpdates.content = updates.content;
+                if (updates.sortOrder) apiUpdates.sort_order = updates.sortOrder;
+
+                await fetch('/api/knowledge', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(apiUpdates)
+                });
+            } catch (error) {
+                console.error('KB Sync error:', error);
+            }
+        }
+    };
+
+    const deleteKnowledgeItem = async (id: string, cardId: string) => {
+        setKnowledgeCards(prev => prev.map(c => {
+            if (c.id === cardId) {
+                return { ...c, items: c.items.filter(i => i.id !== id) };
+            }
+            return c;
+        }));
+
+        if (isOnline) {
+            try {
+                await fetch(`/api/knowledge?entityType=item&id=${id}`, { method: 'DELETE' });
+            } catch (error) {
+                console.error('KB Sync error:', error);
+            }
+        }
+    };
+
+    // ========================================================================
     // COMPUTED VALUES
     // ========================================================================
 
@@ -1461,6 +1618,10 @@ export function useValidationData() {
         goals, updateGoals,
         darkMode, setDarkMode,
         clearData, exportData, exportInterviewsCSV, importData,
+
+        // Knowledge Hub
+        knowledgeCards, addKnowledgeCard, updateKnowledgeCard, deleteKnowledgeCard,
+        addKnowledgeItem, updateKnowledgeItem, deleteKnowledgeItem,
 
         // Computed
         completedInterviews, avgScore, avgSetupTime, pilotCount, highScoreCount,

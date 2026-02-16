@@ -12,6 +12,7 @@ import { LoginScreen } from './components/views/LoginScreen';
 import { Report } from './components/views/Report';
 import { ToastProvider } from './components/ui';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { KnowledgeHub } from './components/views/KnowledgeHub';
 
 const TAB_CONFIG: Record<Tab, { title: string; subtitle: string }> = {
   timeline: { title: 'Task Hub', subtitle: 'Manage tasks, assignments, and priorities.' },
@@ -21,6 +22,7 @@ const TAB_CONFIG: Record<Tab, { title: string; subtitle: string }> = {
   analytics: { title: 'Analytics Dashboard', subtitle: 'Visualize your interview data with charts and trends.' },
   demo: { title: 'Interactive Product Demo', subtitle: 'Share the BNE Kit vision with teachers during interviews.' },
   report: { title: 'Stakeholder Report', subtitle: 'Printable executive summary for advisors and partners.' },
+  knowledge: { title: 'Knowledge Hub', subtitle: 'Central repository for project resources, links, and files.' },
   settings: { title: 'Settings', subtitle: 'Customize goals, appearance, and manage your data.' }
 };
 
@@ -40,6 +42,7 @@ const DashboardContent = () => {
       case 'analytics': return <Analytics />;
       case 'demo': return <Demo />;
       case 'report': return <Report />;
+      case 'knowledge': return <KnowledgeHub />;
       case 'settings': return <Settings />;
       default: return <Tasks />;
     }
