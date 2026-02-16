@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Sidebar, MobileHeader } from './components/Sidebar';
 import type { Tab } from './components/Sidebar';
-import { Timeline } from './components/views/Timeline';
+import { Tasks } from './components/views/Tasks';
 import { Interviews } from './components/views/Interviews';
 import { BuildGuide } from './components/views/BuildGuide';
 import { Decision } from './components/views/Decision';
@@ -14,7 +14,7 @@ import { ToastProvider } from './components/ui';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const TAB_CONFIG: Record<Tab, { title: string; subtitle: string }> = {
-  timeline: { title: 'Week-by-Week Plan', subtitle: 'Track your progress through the 4-week validation sprint.' },
+  timeline: { title: 'Task Hub', subtitle: 'Manage tasks, assignments, and priorities.' },
   interviews: { title: 'Teacher Interview Tracker', subtitle: 'Log feedback, capture insights, and calculate adoption scores.' },
   build: { title: 'Hardware & Software Guide', subtitle: 'Step-by-step instructions to build the MVP.' },
   decision: { title: 'Go/No-Go Decision Framework', subtitle: 'Live view of your validation criteria and recommendation.' },
@@ -33,7 +33,7 @@ const DashboardContent = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'timeline': return <Timeline />;
+      case 'timeline': return <Tasks />;
       case 'interviews': return <Interviews />;
       case 'build': return <BuildGuide />;
       case 'decision': return <Decision />;
@@ -41,7 +41,7 @@ const DashboardContent = () => {
       case 'demo': return <Demo />;
       case 'report': return <Report />;
       case 'settings': return <Settings />;
-      default: return <Timeline />;
+      default: return <Tasks />;
     }
   };
 

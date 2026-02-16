@@ -26,21 +26,40 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             case 'GET': {
                 // Get all tasks
                 const { results } = await env.DB.prepare('SELECT * FROM tasks ORDER BY week_id, created_at').all();
-                const parsedResults = results.map((task: any) => ({
-                    ...task,
-                    completed: task.completed === 1,
-                    is_default: task.is_default === 1,
-                    subtasks: typeof task.subtasks === 'string' ? JSON.parse(task.subtasks) : (task.subtasks || [])
-                }));
+                const parsedResults = results.map((task: any) => {
+                    let assignees = [];
+                    try {
+                        assignees = task.assignees ? JSON.parse(task.assignees) : [];
+                    } catch (e) {
+                        // Fallback for legacy data if migration didn't catch everything or during transition
+                        if (task.assignee) assignees = [task.assignee];
+                    }
+
+                    return {
+                        ...task,
+                        completed: task.completed === 1,
+                        is_default: task.is_default === 1,
+                        subtasks: typeof task.subtasks === 'string' ? JSON.parse(task.subtasks) : (task.subtasks || []),
+                        assignees: assignees
+                    };
+                });
                 return Response.json(parsedResults, { headers: corsHeaders });
             }
 
             case 'POST': {
                 // Create new task
                 const task = await request.json();
+
+                // Handle assignees
+                let assignees = task.assignees || [];
+                // Backwards compatibility for payload
+                if (!task.assignees && task.assignee) {
+                    assignees = [task.assignee];
+                }
+
                 await env.DB.prepare(`
-          INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, assignee, last_modified_by)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, assignee, assignees, last_modified_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
                     task.id,
                     task.title,
@@ -54,7 +73,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     task.is_default ? 1 : 0,
                     JSON.stringify(task.subtasks || []),
                     task.linked_interview_id || null,
-                    task.assignee || null,
+                    assignees.length > 0 ? assignees[0] : null, // Keep assignee for legacy compatibility if needed
+                    JSON.stringify(assignees),
                     task.lastModifiedBy || task.last_modified_by || null
                 ).run();
 
@@ -65,9 +85,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                         VALUES (?, 'CREATE', 'TASK', ?, ?, ?)
                     `).bind(
                         task.lastModifiedBy || task.last_modified_by || 'Unknown User',
-                        task.id, // Task ID is manual in this table? Or auto? The INSERT above uses `task.id`.
+                        task.id,
                         task.title,
-                        JSON.stringify({ priority: task.priority, due_date: task.due_date })
+                        JSON.stringify({ priority: task.priority, due_date: task.due_date, assignees })
                     ).run();
                 } catch (logError) {
                     console.error('Failed to log activity:', logError);
@@ -93,7 +113,24 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 if (updates.completed_at !== undefined) { setClauses.push('completed_at = ?'); values.push(updates.completed_at || null); }
                 if (updates.subtasks !== undefined) { setClauses.push('subtasks = ?'); values.push(JSON.stringify(updates.subtasks)); }
                 if (updates.linked_interview_id !== undefined) { setClauses.push('linked_interview_id = ?'); values.push(updates.linked_interview_id || null); }
-                if (updates.assignee !== undefined) { setClauses.push('assignee = ?'); values.push(updates.assignee || null); }
+
+                // Handle assignees update
+                if (updates.assignees !== undefined) {
+                    setClauses.push('assignees = ?');
+                    values.push(JSON.stringify(updates.assignees));
+
+                    // Sync legacy column
+                    setClauses.push('assignee = ?');
+                    values.push(updates.assignees.length > 0 ? updates.assignees[0] : null);
+                } else if (updates.assignee !== undefined) {
+                    // Legacy payload support
+                    setClauses.push('assignee = ?');
+                    values.push(updates.assignee || null);
+
+                    setClauses.push('assignees = ?');
+                    values.push(updates.assignee ? JSON.stringify([updates.assignee]) : '[]');
+                }
+
                 if (updates.lastModifiedBy !== undefined) { setClauses.push('last_modified_by = ?'); values.push(updates.lastModifiedBy || null); }
 
                 if (setClauses.length > 0) {

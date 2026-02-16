@@ -21,7 +21,8 @@ export interface Task {
     isDefault: boolean;
     subtasks: Subtask[];
     linkedInterviewId?: number;
-    assignee?: TeamMember;
+    assignee?: TeamMember; // Deprecated
+    assignees?: TeamMember[];
     lastModifiedBy?: string;
 }
 
@@ -1058,14 +1059,33 @@ export function useValidationData() {
     };
 
     const updateTask = async (id: string, updates: Partial<Task>) => {
-        setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+        const originalTask = tasks.find(t => t.id === id);
+        if (!originalTask) return;
+
+        const updatedTask = { ...updates };
+
+        // Handle assignees update logic
+        if (updatedTask.assignees) {
+            // Ensure assignees is array
+            if (!Array.isArray(updatedTask.assignees)) {
+                // @ts-ignore
+                updatedTask.assignees = [updatedTask.assignees];
+            }
+        } else if (updatedTask.assignee) {
+            // Backwards compat in optimistic update
+            updatedTask.assignees = [updatedTask.assignee];
+        }
+
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedTask } : t));
         setLastActivity(new Date().toISOString());
 
         if (isOnline) {
             try {
-                await d1Client.tasks.update(id, { ...updates, lastModifiedBy: user?.name });
+                await d1Client.tasks.update(id, { ...updatedTask, lastModifiedBy: user?.name });
             } catch (error) {
                 console.error('Sync error:', error);
+                // Revert on error
+                setTasks(prev => prev.map(t => t.id === id ? originalTask : t));
             }
         }
     };
@@ -1426,7 +1446,7 @@ export function useValidationData() {
         // Tasks
         tasks, toggleTask, addTask, updateTask, deleteTask, moveTask,
         addSubtask, toggleSubtask, deleteSubtask,
-        getTasksByWeek, overdueTasks, todayTasks,
+        getTasksByWeek, overdueTasks, todayTasks, WEEKS,
 
         // Teachers (CRM)
         teachers, addTeacher, updateTeacher, deleteTeacher,

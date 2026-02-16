@@ -57,7 +57,7 @@ export const Sidebar = ({ activeTab, onTabChange, isOpen, onClose, onToggleActiv
         {
             label: 'Planning',
             items: [
-                { id: 'timeline', label: 'Week Plan', icon: LayoutDashboard },
+                { id: 'timeline', label: 'Tasks', icon: LayoutDashboard },
                 { id: 'build', label: 'Build Guide', icon: BookOpen },
             ]
         },
