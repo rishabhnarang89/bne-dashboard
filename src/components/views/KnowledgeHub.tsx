@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useValidationData } from '../../hooks/useValidationData';
 import type { KnowledgeCard, KnowledgeItem } from '../../hooks/useValidationData';
 import {
-    Folder, Plus, Edit3, Trash2, Link as LinkIcon, FileText, Image, LayoutGrid,
-    Search, Filter, Grid, List, Share2, MoreHorizontal, File, FileSpreadsheet, StickyNote
+    Plus, Edit3, Trash2, Link as LinkIcon, FileText,
+    Search, Grid, List, Share2, File, FileSpreadsheet, StickyNote
 } from 'lucide-react';
 import { InfoBlock, Modal, useToast } from '../ui';
 import * as Icons from 'lucide-react';
