@@ -330,10 +330,21 @@ export const KnowledgeHub = () => {
                 onClose={() => setCardModalOpen(false)}
                 title={currentCard.id ? "Edit Category" : "New Category"}
                 footer={
-                    <>
-                        <button className="btn btn-secondary" onClick={() => setCardModalOpen(false)}>Cancel</button>
-                        <button className="btn btn-primary" onClick={handleSaveCard}>Save</button>
-                    </>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                        {currentCard.id && (
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                style={{ color: 'var(--danger)' }}
+                                onClick={() => handleDeleteCard(currentCard.id!)}
+                            >
+                                <Trash2 size={16} /> Delete
+                            </button>
+                        )}
+                        <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                            <button className="btn btn-secondary" onClick={() => setCardModalOpen(false)}>Cancel</button>
+                            <button className="btn btn-primary" onClick={handleSaveCard}>Save</button>
+                        </div>
+                    </div>
                 }
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -371,10 +382,21 @@ export const KnowledgeHub = () => {
                 onClose={() => setItemModalOpen(false)}
                 title={currentItem.id ? "Edit Item" : "New Item"}
                 footer={
-                    <>
-                        <button className="btn btn-secondary" onClick={() => setItemModalOpen(false)}>Cancel</button>
-                        <button className="btn btn-primary" onClick={handleSaveItem}>Save</button>
-                    </>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                        {currentItem.id && activeCardId && (
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                style={{ color: 'var(--danger)' }}
+                                onClick={() => handleDeleteItem(currentItem.id!, activeCardId!)}
+                            >
+                                <Trash2 size={16} /> Delete
+                            </button>
+                        )}
+                        <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                            <button className="btn btn-secondary" onClick={() => setItemModalOpen(false)}>Cancel</button>
+                            <button className="btn btn-primary" onClick={handleSaveItem}>Save</button>
+                        </div>
+                    </div>
                 }
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
