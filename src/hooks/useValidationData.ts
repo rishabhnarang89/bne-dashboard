@@ -21,6 +21,7 @@ export interface Task {
     isDefault: boolean;
     subtasks: Subtask[];
     linkedInterviewId?: number;
+    linkedTeacherId?: number;
     assignee?: TeamMember; // Deprecated
     assignees?: TeamMember[];
     lastModifiedBy?: string;

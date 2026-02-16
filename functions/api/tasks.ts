@@ -58,8 +58,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 }
 
                 await env.DB.prepare(`
-          INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, assignee, assignees, last_modified_by)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, linked_teacher_id, assignee, assignees, last_modified_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
                     task.id,
                     task.title,
@@ -73,6 +73,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     task.is_default ? 1 : 0,
                     JSON.stringify(task.subtasks || []),
                     task.linked_interview_id || null,
+                    task.linked_teacher_id || null,
                     assignees.length > 0 ? assignees[0] : null, // Keep assignee for legacy compatibility if needed
                     JSON.stringify(assignees),
                     task.lastModifiedBy || task.last_modified_by || null
@@ -87,7 +88,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                         task.lastModifiedBy || task.last_modified_by || 'Unknown User',
                         task.id,
                         task.title,
-                        JSON.stringify({ priority: task.priority, due_date: task.due_date, assignees })
+                        JSON.stringify({ priority: task.priority, due_date: task.due_date, assignees, linked_teacher_id: task.linked_teacher_id })
                     ).run();
                 } catch (logError) {
                     console.error('Failed to log activity:', logError);
@@ -113,6 +114,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 if (updates.completed_at !== undefined) { setClauses.push('completed_at = ?'); values.push(updates.completed_at || null); }
                 if (updates.subtasks !== undefined) { setClauses.push('subtasks = ?'); values.push(JSON.stringify(updates.subtasks)); }
                 if (updates.linked_interview_id !== undefined) { setClauses.push('linked_interview_id = ?'); values.push(updates.linked_interview_id || null); }
+                if (updates.linked_teacher_id !== undefined) { setClauses.push('linked_teacher_id = ?'); values.push(updates.linked_teacher_id || null); }
 
                 // Handle assignees update
                 if (updates.assignees !== undefined) {

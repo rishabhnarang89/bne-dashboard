@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
     CheckCircle2, Circle, Clock, Plus, Edit3, Trash2,
     Calendar, Search, Filter, List, LayoutGrid,
-    User
+    User, GraduationCap
 } from 'lucide-react';
 import { InfoBlock, Modal, useToast } from '../ui';
 
@@ -28,7 +28,7 @@ type FilterStatus = 'all' | 'incomplete' | 'completed';
 
 export const Tasks = () => {
     const {
-        tasks, toggleTask, addTask, updateTask, deleteTask, WEEKS
+        tasks, toggleTask, addTask, updateTask, deleteTask, WEEKS, teachers
     } = useValidationData();
     const { showToast } = useToast();
     const { user } = useAuth();
@@ -50,7 +50,8 @@ export const Tasks = () => {
             // Search
             if (searchQuery) {
                 const q = searchQuery.toLowerCase();
-                if (!task.title.toLowerCase().includes(q) && !task.notes?.toLowerCase().includes(q)) return false;
+                const teacherName = task.linkedTeacherId ? teachers.find(t => t.id === task.linkedTeacherId)?.name.toLowerCase() : '';
+                if (!task.title.toLowerCase().includes(q) && !task.notes?.toLowerCase().includes(q) && !teacherName?.includes(q)) return false;
             }
 
             // Status
@@ -123,6 +124,7 @@ export const Tasks = () => {
                 priority: currentTask.priority || 'medium',
                 weekId: currentTask.weekId || 1,
                 assignees: currentTask.assignees || [], // Default to empty
+                linkedTeacherId: currentTask.linkedTeacherId,
                 completed: false
             });
             showToast('Task created', 'success');
@@ -134,6 +136,7 @@ export const Tasks = () => {
                 weekId: currentTask.weekId,
                 dueDate: currentTask.dueDate,
                 assignees: currentTask.assignees,
+                linkedTeacherId: currentTask.linkedTeacherId,
                 assignee: currentTask.assignees?.[0] // Backward compat
             });
             showToast('Task updated', 'success');
@@ -172,6 +175,7 @@ export const Tasks = () => {
     const TaskCard = ({ task }: { task: Task }) => {
         const isOverdue = !task.completed && task.dueDate && new Date(task.dueDate) < new Date();
         const assignees = task.assignees || (task.assignee ? [task.assignee] : []);
+        const linkedTeacher = task.linkedTeacherId ? teachers.find(t => t.id === task.linkedTeacherId) : null;
 
         return (
             <div className="glass-panel" style={{
@@ -199,6 +203,22 @@ export const Tasks = () => {
                         fontSize: '0.95rem'
                     }}>
                         {task.title}
+                        {linkedTeacher && (
+                            <span style={{
+                                marginLeft: '8px',
+                                fontSize: '0.75rem',
+                                background: 'var(--bg-elevated)',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                color: 'var(--text-muted)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}>
+                                <GraduationCap size={12} />
+                                {linkedTeacher.name}
+                            </span>
+                        )}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -268,7 +288,7 @@ export const Tasks = () => {
                     <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input
                         className="input"
-                        placeholder="Search tasks..."
+                        placeholder="Search tasks (title, notes, teacher)..."
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         style={{ paddingLeft: '34px', width: '100%' }}
@@ -418,6 +438,20 @@ export const Tasks = () => {
                                 );
                             })}
                         </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label className="label">Linked Teacher (Optional)</label>
+                        <select
+                            className="input"
+                            value={currentTask.linkedTeacherId || ''}
+                            onChange={e => setCurrentTask({ ...currentTask, linkedTeacherId: e.target.value ? Number(e.target.value) : undefined })}
+                        >
+                            <option value="">-- No Teacher Linked --</option>
+                            {teachers.map(t => (
+                                <option key={t.id} value={t.id}>{t.name} ({t.school})</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="form-group">
