@@ -20,7 +20,8 @@ const ASSIGNEE_CONFIG: Record<TeamMember, { color: string; bg: string; label: st
     rishabh: { color: '#3b82f6', bg: '#eff6ff', label: 'Rishabh', emoji: 'Vr' }, // Using initials/emoji
     tung: { color: '#8b5cf6', bg: '#f5f3ff', label: 'Tung', emoji: 'Pt' },
     johannes: { color: '#f59e0b', bg: '#fffbeb', label: 'Johannes', emoji: 'Jk' },
-    all: { color: '#10b981', bg: '#ecfdf5', label: 'All', emoji: '👥' }
+    all: { color: '#10b981', bg: '#ecfdf5', label: 'All', emoji: '👥' },
+    both: { color: '#10b981', bg: '#ecfdf5', label: 'Both', emoji: '👥' }
 };
 
 type GroupBy = 'none' | 'priority' | 'week';

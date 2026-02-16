@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 // TYPES
 // ============================================================================
 
-export type TeamMember = 'rishabh' | 'tung' | 'johannes' | 'all';
+export type TeamMember = 'rishabh' | 'tung' | 'johannes' | 'all' | 'both';
 
 export interface Task {
     id: string;
@@ -834,16 +834,16 @@ const createDefaultTasks = (): Task[] => [
     { id: 'w1_t4', title: "Send second batch of LinkedIn requests (15 more)", weekId: 1, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'tung' },
     { id: 'w1_t5', title: "Reach out to MINT21 Coordinator (Klaus Luber)", weekId: 1, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'tung', notes: 'OVERDUE, highest-value contact.' },
     // Validation Prep
-    { id: 'w1_t6', title: "Create 2-page prototype overview PDF", weekId: 1, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Tech specs + teacher benefits, German.' },
+    { id: 'w1_t6', title: "Create 2-page prototype overview PDF", weekId: 1, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Tech specs + teacher benefits, German.' },
     { id: 'w1_t7', title: "Set up Calendly with 15-min teacher interview slots", weekId: 1, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'tung' },
-    { id: 'w1_t8', title: "Draft LOI (Letter of Intent) template", weekId: 1, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: '1 page, German, non-binding commitment.' },
+    { id: 'w1_t8', title: "Draft LOI (Letter of Intent) template", weekId: 1, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: '1 page, German, non-binding commitment.' },
 
     // WEEK 2: Interview Execution
-    { id: 'w2_t1', title: "Complete 10 teacher interviews", weekId: 2, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Target: 10 interviews. Use tracker.' },
-    { id: 'w2_t2', title: "Record interview insights template", weekId: 2, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Pain points, willingness to pilot, budget info.' },
-    { id: 'w2_t3', title: "Send prototype overview PDF to interested teachers", weekId: 2, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all' },
-    { id: 'w2_t4', title: "Request LOIs from 3-5 most enthusiastic teachers", weekId: 2, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all' },
-    { id: 'w2_t5', title: "Identify 1-2 'champion teachers' for deeper collaboration", weekId: 2, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all' },
+    { id: 'w2_t1', title: "Complete 10 teacher interviews", weekId: 2, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Target: 10 interviews. Use tracker.' },
+    { id: 'w2_t2', title: "Record interview insights template", weekId: 2, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Pain points, willingness to pilot, budget info.' },
+    { id: 'w2_t3', title: "Send prototype overview PDF to interested teachers", weekId: 2, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both' },
+    { id: 'w2_t4', title: "Request LOIs from 3-5 most enthusiastic teachers", weekId: 2, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both' },
+    { id: 'w2_t5', title: "Identify 1-2 'champion teachers' for deeper collaboration", weekId: 2, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both' },
 
     // WEEK 3-4: Prototype Build
     { id: 'w3_t1', title: "Order Raspberry Pi 5 + LoRa components", weekId: 3, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'rishabh', notes: 'BerryBase - do NOW, Pi 5 stock issues.' },
@@ -854,24 +854,24 @@ const createDefaultTasks = (): Task[] => [
     { id: 'w3_t6', title: "Record 5-min demo video", weekId: 3, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'rishabh', notes: 'Unbox -> setup -> first data point -> dashboard.' },
 
     // WEEK 5: Social Proof Package
-    { id: 'w5_t1', title: "Compile interview insights report", weekId: 4, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Quantify pain points, % interested in pilot.' },
-    { id: 'w5_t2', title: "Collect 5+ teacher quotes", weekId: 4, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Even "this would solve X problem" counts.' },
-    { id: 'w5_t3', title: "Calculate TAM", weekId: 4, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Bayern Realschulen x MINT21 schools x €799.' },
-    { id: 'w5_t4', title: "Create infographic: Teacher pain points -> BNE-Box solution", weekId: 4, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Use Canva.' },
-    { id: 'w5_t5', title: "Draft 8-slide pitch deck", weekId: 4, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Using template from earlier conversation.' },
+    { id: 'w5_t1', title: "Compile interview insights report", weekId: 4, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Quantify pain points, % interested in pilot.' },
+    { id: 'w5_t2', title: "Collect 5+ teacher quotes", weekId: 4, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Even "this would solve X problem" counts.' },
+    { id: 'w5_t3', title: "Calculate TAM", weekId: 4, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Bayern Realschulen x MINT21 schools x €799.' },
+    { id: 'w5_t4', title: "Create infographic: Teacher pain points -> BNE-Box solution", weekId: 4, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Use Canva.' },
+    { id: 'w5_t5', title: "Draft 8-slide pitch deck", weekId: 4, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Using template from earlier conversation.' },
 
     // WEEK 6: HM Professor Validation
-    { id: 'w6_t1', title: "Research HM München professors", weekId: 5, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'EdTech, MINT Didaktik, Sustainability (3-5 targets).' },
-    { id: 'w6_t2', title: "Draft professor email", weekId: 5, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Seeking academic feedback on BNE hardware solution.' },
-    { id: 'w6_t3', title: "Schedule 30-min meeting with most responsive professor", weekId: 5, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all' },
-    { id: 'w6_t4', title: "Prepare EXIST questions", weekId: 5, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Innovation criteria, team requirements, timeline.' },
+    { id: 'w6_t1', title: "Research HM München professors", weekId: 5, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'EdTech, MINT Didaktik, Sustainability (3-5 targets).' },
+    { id: 'w6_t2', title: "Draft professor email", weekId: 5, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Seeking academic feedback on BNE hardware solution.' },
+    { id: 'w6_t3', title: "Schedule 30-min meeting with most responsive professor", weekId: 5, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both' },
+    { id: 'w6_t4', title: "Prepare EXIST questions", weekId: 5, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Innovation criteria, team requirements, timeline.' },
 
     // WEEK 7: EXIST Application Assembly
-    { id: 'w7_t1', title: "Write innovation narrative", weekId: 6, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'offline LLM + LoRa = GDPR-compliant novelty.' },
-    { id: 'w7_t2', title: "Document competitive advantage", weekId: 6, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'vs. PHYWE/Vernier.' },
-    { id: 'w7_t3', title: "Create 12-month milestone roadmap", weekId: 6, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Prototype -> 10 pilots -> 100 units.' },
-    { id: 'w7_t4', title: "Assemble team section", weekId: 6, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all', notes: 'Your CV + co-founders.' },
-    { id: 'w7_t5', title: "Submit EXIST-Gründerstipendium application", weekId: 6, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'all' },
+    { id: 'w7_t1', title: "Write innovation narrative", weekId: 6, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'offline LLM + LoRa = GDPR-compliant novelty.' },
+    { id: 'w7_t2', title: "Document competitive advantage", weekId: 6, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'vs. PHYWE/Vernier.' },
+    { id: 'w7_t3', title: "Create 12-month milestone roadmap", weekId: 6, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Prototype -> 10 pilots -> 100 units.' },
+    { id: 'w7_t4', title: "Assemble team section", weekId: 6, priority: 'medium', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both', notes: 'Your CV + co-founders.' },
+    { id: 'w7_t5', title: "Submit EXIST-Gründerstipendium application", weekId: 6, priority: 'high', completed: false, isDefault: true, createdAt: '2026-01-10', subtasks: [], assignee: 'both' },
 ];
 
 // ============================================================================
