@@ -3,7 +3,7 @@ import { useValidationData } from '../../hooks/useValidationData';
 import type { KnowledgeCard, KnowledgeItem } from '../../hooks/useValidationData';
 import {
     Plus, Edit3, Trash2, Link as LinkIcon, FileText,
-    Search, Grid, List, Share2, File, FileSpreadsheet, StickyNote,
+    Search, Grid, List, File, FileSpreadsheet, StickyNote,
     ExternalLink, FolderOpen
 } from 'lucide-react';
 import { Modal, useToast } from '../ui';
