@@ -65,52 +65,68 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     // Normalize week_id
                     task.week_id = task.week_id ? parseInt(String(task.week_id)) : 1;
 
+                    console.log('SYNC TASK PAYLOAD:', JSON.stringify(task));
+
                     // Handle assignees
                     let assignees = task.assignees || [];
-                    if (!task.assignees && task.assignee) {
+                    if (task.assignee) {
                         assignees = [task.assignee];
+                    }
 
-                        // Backward compatible assignee (must match old check constraint: rishabh, tung, johannes, all)
-                        const validAssignees = ['rishabh', 'tung', 'johannes', 'all'];
-                        const legacyAssignee = assignees.length > 0 && validAssignees.includes(assignees[0]) ? assignees[0] : null;
+                    // Backward compatible assignee (must match old check constraint: rishabh, tung, johannes, all)
+                    const validAssignees = ['rishabh', 'tung', 'johannes', 'all'];
 
-                        // Security Note: All inputs are bound via .bind() to prevent SQL Injection
-                        await env.DB.prepare(`
+                    // Logic to extract legacy assignee if array has one clear item
+                    let legacyAssignee = null;
+                    if (Array.isArray(assignees) && assignees.length > 0) {
+                        const first = assignees[0];
+                        if (validAssignees.includes(first)) {
+                            legacyAssignee = first;
+                        }
+                    } else if (typeof task.assignee === 'string' && validAssignees.includes(task.assignee)) {
+                        legacyAssignee = task.assignee;
+                    }
+
+                    // Log calculated values
+                    console.log('SYNC TASK Calculated:', { id: task.id, week_id: task.week_id, legacyAssignee, assignees });
+
+                    const result = await env.DB.prepare(`
                         INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, linked_teacher_id, assignee, assignees, last_modified_by)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     `).bind(
-                            task.id,
-                            task.title,
-                            task.notes || null,
-                            task.week_id,
-                            task.priority,
-                            task.due_date || null,
-                            task.completed ? 1 : 0,
-                            task.completed_at || null,
-                            task.created_at || new Date().toISOString(),
-                            task.is_default ? 1 : 0,
-                            JSON.stringify(task.subtasks || []),
-                            task.linked_interview_id || null,
-                            task.linked_teacher_id || null,
-                            legacyAssignee,
-                            JSON.stringify(assignees),
-                            task.lastModifiedBy || task.last_modified_by || null
-                        ).run();
+                        task.id,
+                        task.title,
+                        task.notes || null,
+                        task.week_id,
+                        task.priority,
+                        task.due_date || null,
+                        task.completed ? 1 : 0,
+                        task.completed_at || null,
+                        task.created_at || new Date().toISOString(),
+                        task.isDefault ? 1 : 0,
+                        JSON.stringify(task.subtasks || []),
+                        task.linked_interview_id || null,
+                        task.linked_teacher_id || null,
+                        legacyAssignee,
+                        JSON.stringify(assignees),
+                        task.lastModifiedBy || null
+                    ).run();
 
-                        // Log Activity
-                        try {
-                            await env.DB.prepare(`
+                    console.log('SYNC TASK DB RESULT:', JSON.stringify(result));
+
+                    // Log Activity
+                    try {
+                        await env.DB.prepare(`
                             INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
                             VALUES (?, 'CREATE', 'TASK', ?, ?, ?)
                         `).bind(
-                                task.lastModifiedBy || task.last_modified_by || 'Unknown User',
-                                task.id,
-                                task.title,
-                                JSON.stringify({ priority: task.priority, due_date: task.due_date, assignees, linked_teacher_id: task.linked_teacher_id })
-                            ).run();
-                        } catch (logError) {
-                            console.error('Failed to log update:', logError);
-                        }
+                            task.lastModifiedBy || 'Unknown User',
+                            task.id,
+                            task.title,
+                            JSON.stringify({ priority: task.priority, due_date: task.due_date, assignees, linked_teacher_id: task.linked_teacher_id })
+                        ).run();
+                    } catch (logError) {
+                        console.error('Failed to log update:', logError);
                     }
 
                     return Response.json({ success: true }, { headers: corsHeaders });
