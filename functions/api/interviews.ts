@@ -24,12 +24,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                         key_insights: typeof interview.key_insights === 'string' ? JSON.parse(interview.key_insights) : (interview.key_insights || [])
                     }));
                     return Response.json(parsedResults, { headers: corsHeaders });
-                } catch (error: any) {
-                    if (error.message?.includes('no such table')) {
-                        console.error('DATABASE TABLE MISSING (interviews):', error.message);
-                        return Response.json([], { headers: corsHeaders });
-                    }
-                    throw error;
+                } catch (error) {
+                    console.error('DATABASE ERROR (interviews):', error);
+                    return Response.json([], { headers: corsHeaders });
                 }
             }
 

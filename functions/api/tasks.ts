@@ -35,12 +35,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                         };
                     });
                     return Response.json(parsedResults, { headers: corsHeaders });
-                } catch (error: any) {
-                    if (error.message?.includes('no such table')) {
-                        console.error('DATABASE TABLE MISSING (tasks):', error.message);
-                        return Response.json([], { headers: corsHeaders });
-                    }
-                    throw error;
+                } catch (error) {
+                    console.error('DATABASE ERROR (tasks):', error);
+                    return Response.json([], { headers: corsHeaders });
                 }
             }
 

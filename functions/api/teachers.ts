@@ -26,12 +26,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                         noteLog: teacher.note_log ? JSON.parse(teacher.note_log) : []
                     }));
                     return Response.json(mappedResults, { headers: corsHeaders });
-                } catch (error: any) {
-                    if (error.message?.includes('no such table')) {
-                        console.error('DATABASE TABLE MISSING (teachers):', error.message);
-                        return Response.json([], { headers: corsHeaders });
-                    }
-                    throw error;
+                } catch (error) {
+                    console.error('DATABASE ERROR (teachers):', error);
+                    return Response.json([], { headers: corsHeaders });
                 }
             }
 

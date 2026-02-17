@@ -1114,9 +1114,8 @@ export function useValidationData() {
     // ========================================================================
     // PERSIST TO LOCALSTORAGE (always, as backup)
     // ========================================================================
-
-
     useEffect(() => { localStorage.setItem('bne_tasks_v2', JSON.stringify(tasks)); }, [tasks]);
+    useEffect(() => { localStorage.setItem('bne_teachers', JSON.stringify(teachers)); }, [teachers]);
     useEffect(() => { localStorage.setItem('bne_interviews', JSON.stringify(interviews)); }, [interviews]);
     useEffect(() => { localStorage.setItem('bne_goals', JSON.stringify(goals)); }, [goals]);
     useEffect(() => { localStorage.setItem('bne_darkMode', JSON.stringify(darkMode)); document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light'); }, [darkMode]);

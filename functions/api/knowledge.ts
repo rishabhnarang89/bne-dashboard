@@ -25,7 +25,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                         'SELECT * FROM knowledge_items ORDER BY sort_order, created_at DESC'
                     ).all();
 
-                    const structuredData = cards.map((card: any) => ({
+                    const structuredData = (cards || []).map((card: any) => ({
                         id: card.id,
                         title: card.title,
                         description: card.description,
@@ -48,12 +48,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     }));
 
                     return Response.json(structuredData, { headers: corsHeaders });
-                } catch (dbError: any) {
-                    if (dbError.message?.includes('no such table')) {
-                        console.error('DATABASE TABLE MISSING in production:', dbError.message);
-                        return Response.json([], { headers: corsHeaders }); // Return empty rather than 500
-                    }
-                    throw dbError;
+                } catch (error) {
+                    console.error('DATABASE ERROR (knowledge):', error);
+                    return Response.json([], { headers: corsHeaders });
                 }
             }
 
