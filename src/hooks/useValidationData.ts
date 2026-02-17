@@ -1016,33 +1016,51 @@ export function useValidationData() {
                     fetch('/api/knowledge').then(res => res.ok ? res.json() : null)
                 ]);
 
-                // Defensive Update: Only apply server data if it's non-empty or if local state is currently empty
-                // We check localStorage directly to avoid stale closure issues with the state variables
-                const hasLocalTasks = !!localStorage.getItem('bne_tasks_v2');
-                const hasLocalTeachers = !!localStorage.getItem('bne_teachers_v2');
-                const hasLocalInterviews = !!localStorage.getItem('bne_interviews_v2');
+                // ====================================================================
+                // DEFENSIVE MERGE: Combine server state with local-only changes
+                // ====================================================================
 
-                if (Array.isArray(tasksData) && (tasksData.length > 0 || !hasLocalTasks)) {
+                // Tasks Merge
+                if (Array.isArray(tasksData)) {
+                    const localSaved = localStorage.getItem('bne_tasks_v2');
+                    const localTasks: Task[] = localSaved ? JSON.parse(localSaved) : [];
+
+                    // Keep any local-only tasks (ones not on the server)
+                    const serverIds = new Set(tasksData.map((t: Task) => t.id));
+                    const pendingLocal = localTasks.filter(t => !serverIds.has(t.id));
+
+                    // Merge and handle defaults
+                    const mergedTasks = [...tasksData, ...pendingLocal];
                     const defaultTasks = createDefaultTasks();
-                    const existingIds = new Set(tasksData.map((t: Task) => t.id));
-                    const missingTasks = defaultTasks.filter(t => !existingIds.has(t.id));
+                    const existingMergedIds = new Set(mergedTasks.map((t: Task) => t.id));
+                    const missingDefaults = defaultTasks.filter(t => !existingMergedIds.has(t.id));
 
-                    if (missingTasks.length > 0) {
-                        for (const task of missingTasks) {
-                            try { await d1Client.tasks.create(task); } catch (e) { /* ignore seeding errors */ }
+                    if (missingDefaults.length > 0) {
+                        for (const task of missingDefaults) {
+                            try { await d1Client.tasks.create(task); } catch (e) { /* ignore */ }
                         }
-                        setTasks([...tasksData, ...missingTasks]);
+                        setTasks([...mergedTasks, ...missingDefaults]);
                     } else {
-                        setTasks(tasksData);
+                        setTasks(mergedTasks);
                     }
                 }
 
-                if (Array.isArray(teachersData) && (teachersData.length > 0 || !hasLocalTeachers)) {
-                    setTeachers(teachersData);
+                // Teachers Merge
+                if (Array.isArray(teachersData)) {
+                    const localSaved = localStorage.getItem('bne_teachers_v2');
+                    const localTeachers: any[] = localSaved ? JSON.parse(localSaved) : [];
+                    const serverIds = new Set(teachersData.map((t: any) => t.id));
+                    const pendingLocal = localTeachers.filter(t => !serverIds.has(t.id));
+                    setTeachers([...teachersData, ...pendingLocal]);
                 }
 
-                if (Array.isArray(interviewsData) && (interviewsData.length > 0 || !hasLocalInterviews)) {
-                    setInterviews(interviewsData);
+                // Interviews Merge
+                if (Array.isArray(interviewsData)) {
+                    const localSaved = localStorage.getItem('bne_interviews_v2');
+                    const localInterviews: any[] = localSaved ? JSON.parse(localSaved) : [];
+                    const serverIds = new Set(interviewsData.map((t: any) => t.id));
+                    const pendingLocal = localInterviews.filter(t => !serverIds.has(t.id));
+                    setInterviews([...interviewsData, ...pendingLocal]);
                 }
 
                 if (goalsData && Object.keys(goalsData).length > 0) {

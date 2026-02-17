@@ -60,6 +60,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                         assignees = [task.assignee];
                     }
 
+                    // Backward compatible assignee (must match old check constraint: rishabh, tung, johannes, all)
+                    const validAssignees = ['rishabh', 'tung', 'johannes', 'all'];
+                    const legacyAssignee = assignees.length > 0 && validAssignees.includes(assignees[0]) ? assignees[0] : null;
+
                     // Security Note: All inputs are bound via .bind() to prevent SQL Injection
                     await env.DB.prepare(`
                         INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, linked_teacher_id, assignee, assignees, last_modified_by)
@@ -78,7 +82,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                         JSON.stringify(task.subtasks || []),
                         task.linked_interview_id || null,
                         task.linked_teacher_id || null,
-                        assignees.length > 0 ? assignees[0] : null,
+                        legacyAssignee,
                         JSON.stringify(assignees),
                         task.lastModifiedBy || task.last_modified_by || null
                     ).run();
@@ -133,13 +137,20 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 if (updates.linked_teacher_id !== undefined) { setClauses.push('linked_teacher_id = ?'); values.push(updates.linked_teacher_id || null); }
 
                 if (updates.assignees !== undefined) {
+                    const validAssignees = ['rishabh', 'tung', 'johannes', 'all'];
+                    const first = updates.assignees.length > 0 ? updates.assignees[0] : null;
+                    const legacy = validAssignees.includes(first) ? first : null;
+
                     setClauses.push('assignees = ?');
                     values.push(JSON.stringify(updates.assignees));
                     setClauses.push('assignee = ?');
-                    values.push(updates.assignees.length > 0 ? updates.assignees[0] : null);
+                    values.push(legacy);
                 } else if (updates.assignee !== undefined) {
+                    const validAssignees = ['rishabh', 'tung', 'johannes', 'all'];
+                    const legacy = validAssignees.includes(updates.assignee) ? updates.assignee : null;
+
                     setClauses.push('assignee = ?');
-                    values.push(updates.assignee || null);
+                    values.push(legacy);
                     setClauses.push('assignees = ?');
                     values.push(updates.assignee ? JSON.stringify([updates.assignee]) : '[]');
                 }
