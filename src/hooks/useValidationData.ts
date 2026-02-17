@@ -902,6 +902,21 @@ export function useValidationData() {
         } catch { /* ignore */ }
         return false;
     });
+
+    // Immediate restore from localStorage to prevent blank UI on slow/broken API
+    useEffect(() => {
+        const savedKB = localStorage.getItem('bne_knowledge_cards');
+        if (savedKB) {
+            try {
+                const parsed = JSON.parse(savedKB);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setKnowledgeCards(parsed);
+                }
+            } catch (e) {
+                console.error('Initial KB restore error:', e);
+            }
+        }
+    }, []);
     const [lastActivity, setLastActivity] = useState<string>(new Date().toISOString());
 
     // ========================================================================
@@ -978,7 +993,7 @@ export function useValidationData() {
                     d1Client.teachers.getAll(),
                     d1Client.interviews.getAll(),
                     d1Client.goals.get(),
-                    fetch('/api/knowledge').then(res => res.ok ? res.json() : [])
+                    fetch('/api/knowledge').then(res => res.ok ? res.json() : null)
                 ]);
 
                 // Sync new default tasks if they don't exist
@@ -1004,8 +1019,8 @@ export function useValidationData() {
                     setGoals(goalsData);
                 }
 
-                // Knowledge Hub Seeding
-                if (Array.isArray(knowledgeData)) {
+                // Knowledge Hub Seeding / Merging
+                if (Array.isArray(knowledgeData) && knowledgeData.length > 0) {
                     // Identify missing default cards
                     const existingCardIds = new Set(knowledgeData.map((c: any) => c.id));
                     const missingDefaults = DEFAULT_KNOWLEDGE_CARDS.filter(c => !existingCardIds.has(c.id));
@@ -1014,18 +1029,23 @@ export function useValidationData() {
                         const seededCards = [...knowledgeData];
 
                         for (const card of missingDefaults) {
-                            await fetch('/api/knowledge', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ entityType: 'card', ...card })
-                            });
-                            // Add timestamp for local state
-                            seededCards.push({ ...card, createdAt: new Date().toISOString() });
+                            try {
+                                await fetch('/api/knowledge', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ entityType: 'card', ...card })
+                                });
+                                // Add timestamp for local state
+                                seededCards.push({ ...card, createdAt: new Date().toISOString() });
+                            } catch (e) { console.error('Seeding failed', e); }
                         }
                         setKnowledgeCards(seededCards);
                     } else {
                         setKnowledgeCards(knowledgeData);
                     }
+                } else if (knowledgeData === null) {
+                    // API errored, keep localStorage
+                    console.warn('API Knowledge Hub failed (500), using cached data');
                 }
 
                 setIsOnline(true);

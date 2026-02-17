@@ -16,37 +16,45 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     try {
         switch (method) {
             case 'GET': {
-                const { results: cards } = await env.DB.prepare(
-                    'SELECT * FROM knowledge_cards ORDER BY sort_order, created_at DESC'
-                ).all();
+                try {
+                    const { results: cards } = await env.DB.prepare(
+                        'SELECT * FROM knowledge_cards ORDER BY sort_order, created_at DESC'
+                    ).all();
 
-                const { results: items } = await env.DB.prepare(
-                    'SELECT * FROM knowledge_items ORDER BY sort_order, created_at DESC'
-                ).all();
+                    const { results: items } = await env.DB.prepare(
+                        'SELECT * FROM knowledge_items ORDER BY sort_order, created_at DESC'
+                    ).all();
 
-                const structuredData = cards.map((card: any) => ({
-                    id: card.id,
-                    title: card.title,
-                    description: card.description,
-                    icon: card.icon,
-                    color: card.color,
-                    sortOrder: card.sort_order,
-                    createdAt: card.created_at,
-                    items: items
-                        .filter((item: any) => item.card_id === card.id)
-                        .map((item: any) => ({
-                            id: item.id,
-                            cardId: item.card_id,
-                            type: item.type,
-                            title: item.title,
-                            url: item.url,
-                            content: item.content,
-                            sortOrder: item.sort_order,
-                            createdAt: item.created_at
-                        }))
-                }));
+                    const structuredData = cards.map((card: any) => ({
+                        id: card.id,
+                        title: card.title,
+                        description: card.description,
+                        icon: card.icon,
+                        color: card.color,
+                        sortOrder: card.sort_order,
+                        createdAt: card.created_at,
+                        items: (items || [])
+                            .filter((item: any) => item.card_id === card.id)
+                            .map((item: any) => ({
+                                id: item.id,
+                                cardId: item.card_id,
+                                type: item.type,
+                                title: item.title,
+                                url: item.url,
+                                content: item.content,
+                                sortOrder: item.sort_order,
+                                createdAt: item.created_at
+                            }))
+                    }));
 
-                return Response.json(structuredData, { headers: corsHeaders });
+                    return Response.json(structuredData, { headers: corsHeaders });
+                } catch (dbError: any) {
+                    if (dbError.message?.includes('no such table')) {
+                        console.error('DATABASE TABLE MISSING in production:', dbError.message);
+                        return Response.json([], { headers: corsHeaders }); // Return empty rather than 500
+                    }
+                    throw dbError;
+                }
             }
 
             case 'POST': {
