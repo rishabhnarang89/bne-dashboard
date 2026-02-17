@@ -1034,7 +1034,12 @@ export function useValidationData() {
                         console.log('Syncing local pending tasks to server...', pendingLocal.length);
                         for (const task of pendingLocal) {
                             // Fire and forget sync to not block UI
-                            d1Client.tasks.create(task).catch(err => console.error('Background sync failed for task:', task.title, err));
+                            d1Client.tasks.create(task)
+                                .then(res => {
+                                    if (res.error) console.error('Background sync API error for task:', task.title, res.error);
+                                    else console.log('Background sync success for task:', task.title);
+                                })
+                                .catch(err => console.error('Background sync network failed for task:', task.title, err));
                         }
                     }
 
