@@ -422,6 +422,7 @@ export const KnowledgeHub = () => {
                 isOpen={cardModalOpen}
                 onClose={() => setCardModalOpen(false)}
                 title={currentCard.id ? "Edit Category" : "New Category"}
+                closeOnOutsideClick={false}
                 footer={
                     <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                         {currentCard.id && (
@@ -435,7 +436,7 @@ export const KnowledgeHub = () => {
                         )}
                         <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
                             <button className="btn btn-secondary" onClick={() => setCardModalOpen(false)}>Cancel</button>
-                            <button className="btn btn-primary" onClick={handleSaveCard}>Save</button>
+                            <button className="btn btn-primary" onClick={handleSaveCard}>{currentCard.id ? "Update" : "Create"}</button>
                         </div>
                     </div>
                 }
@@ -486,6 +487,7 @@ export const KnowledgeHub = () => {
                 isOpen={itemModalOpen}
                 onClose={() => setItemModalOpen(false)}
                 title={currentItem.id ? "Edit Resource" : "Add Resource"}
+                closeOnOutsideClick={false}
                 footer={
                     <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                         {currentItem.id && activeCardId && (
@@ -566,7 +568,7 @@ export const KnowledgeHub = () => {
                         />
                     </div>
                 </div>
-            </Modal>
-        </div>
+            </Modal >
+        </div >
     );
 };

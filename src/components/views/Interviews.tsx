@@ -708,6 +708,7 @@ export const Interviews = () => {
                 onClose={() => { setTeacherModalOpen(false); setEditingTeacher(null); }}
                 title={editingTeacher ? 'Edit Teacher' : 'Add New Teacher'}
                 size="lg"
+                closeOnOutsideClick={false}
                 footer={
                     <>
                         <button className="btn btn-secondary" onClick={() => setTeacherModalOpen(false)}>Cancel</button>
@@ -971,6 +972,7 @@ export const Interviews = () => {
                                 'Complete Interview'
                 }
                 size="lg"
+                closeOnOutsideClick={false}
                 footer={
                     <>
                         {interviewStage === 'setup' && (

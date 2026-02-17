@@ -1095,6 +1095,10 @@ export function useValidationData() {
             // Last activity
             const savedLastActivity = localStorage.getItem('bne_lastActivity');
             if (savedLastActivity) setLastActivity(savedLastActivity);
+
+            // Knowledge Cards backup
+            const savedKB = localStorage.getItem('bne_knowledge_cards');
+            if (savedKB) setKnowledgeCards(JSON.parse(savedKB));
         };
 
         loadData();
@@ -1109,11 +1113,9 @@ export function useValidationData() {
     useEffect(() => { localStorage.setItem('bne_tasks_v2', JSON.stringify(tasks)); }, [tasks]);
     useEffect(() => { localStorage.setItem('bne_interviews', JSON.stringify(interviews)); }, [interviews]);
     useEffect(() => { localStorage.setItem('bne_goals', JSON.stringify(goals)); }, [goals]);
-    useEffect(() => {
-        localStorage.setItem('bne_darkMode', JSON.stringify(darkMode));
-        document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
-    }, [darkMode]);
+    useEffect(() => { localStorage.setItem('bne_darkMode', JSON.stringify(darkMode)); document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light'); }, [darkMode]);
     useEffect(() => { localStorage.setItem('bne_lastActivity', lastActivity); }, [lastActivity]);
+    useEffect(() => { localStorage.setItem('bne_knowledge_cards', JSON.stringify(knowledgeCards)); }, [knowledgeCards]);
 
     // ========================================================================
     // TASK ACTIONS
@@ -1527,7 +1529,15 @@ export function useValidationData() {
                 await fetch('/api/knowledge', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ entityType: 'card', ...card })
+                    body: JSON.stringify({
+                        entityType: 'card',
+                        id: card.id,
+                        title: card.title,
+                        description: card.description,
+                        icon: card.icon,
+                        color: card.color,
+                        sort_order: card.sortOrder // Fix mapping
+                    })
                 });
             } catch (error) {
                 console.error('KB Sync error:', error);
@@ -1543,7 +1553,12 @@ export function useValidationData() {
                 await fetch('/api/knowledge', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ entityType: 'card', id, ...updates })
+                    body: JSON.stringify({
+                        entityType: 'card',
+                        id,
+                        ...updates,
+                        sort_order: updates.sortOrder !== undefined ? updates.sortOrder : undefined // Fix mapping if present
+                    })
                 });
             } catch (error) {
                 console.error('KB Sync error:', error);

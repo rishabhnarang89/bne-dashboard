@@ -8,23 +8,44 @@ interface ModalProps {
     children: ReactNode;
     footer?: ReactNode;
     size?: 'sm' | 'md' | 'lg';
+    closeOnOutsideClick?: boolean;
+    closeOnEsc?: boolean;
 }
 
-export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }: ModalProps) => {
+export const Modal = ({
+    isOpen,
+    onClose,
+    title,
+    children,
+    footer,
+    size = 'md',
+    closeOnOutsideClick = false,
+    closeOnEsc = true
+}: ModalProps) => {
     // Close on escape key
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape' && closeOnEsc) onClose();
+        };
+        const handleGlobalClick = (e: MouseEvent) => {
+            console.log('Global click detected while modal open:', {
+                target: e.target,
+                currentTarget: e.currentTarget,
+                modalOpen: isOpen,
+                closeOnOutsideClick
+            });
         };
         if (isOpen) {
             document.addEventListener('keydown', handleEscape);
+            document.addEventListener('click', handleGlobalClick, true); // Use capture phase
             document.body.style.overflow = 'hidden';
         }
         return () => {
             document.removeEventListener('keydown', handleEscape);
+            document.removeEventListener('click', handleGlobalClick, true);
             document.body.style.overflow = '';
         };
-    }, [isOpen, onClose]);
+    }, [isOpen, onClose, closeOnEsc, closeOnOutsideClick]);
 
     if (!isOpen) return null;
 
@@ -35,7 +56,20 @@ export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }:
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <div
+            className="modal-overlay-wrapper"
+            onClick={(e) => {
+                const isOverlay = e.target === e.currentTarget;
+                console.log('Modal wrapper click:', { isOverlay, closeOnOutsideClick, target: (e.target as any).className });
+                if (isOverlay) {
+                    if (closeOnOutsideClick) {
+                        onClose();
+                    } else {
+                        console.log('Closure prevented by closeOnOutsideClick=false');
+                    }
+                }
+            }}
+        >
             <div
                 className="modal"
                 style={{ maxWidth: sizes[size] }}
