@@ -181,8 +181,9 @@ export const Tasks = () => {
     // Components
     const TaskCard = ({ task }: { task: Task }) => {
         const isOverdue = !task.completed && task.dueDate && new Date(task.dueDate) < new Date();
-        const assignees = task.assignees || (task.assignee ? [task.assignee] : []);
+        const assignees = Array.isArray(task.assignees) ? task.assignees : (task.assignee ? [task.assignee as TeamMember] : []);
         const linkedTeacher = task.linkedTeacherId ? teachers.find(t => t.id === task.linkedTeacherId) : null;
+        const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
 
         return (
             <div className="glass-panel" style={{
@@ -239,22 +240,22 @@ export const Tasks = () => {
                         {assignees.length > 0 && (
                             <div style={{ display: 'flex', gap: '2px' }}>
                                 {assignees.map(a => (
-                                    <span key={a} title={ASSIGNEE_CONFIG[a]?.label} style={{
+                                    <span key={a} title={ASSIGNEE_CONFIG[a]?.label || 'Unassigned'} style={{
                                         width: '20px', height: '20px', borderRadius: '50%',
-                                        background: ASSIGNEE_CONFIG[a]?.bg || '#eee',
-                                        color: ASSIGNEE_CONFIG[a]?.color || '#555',
+                                        background: ASSIGNEE_CONFIG[a]?.bg || 'var(--bg-elevated)',
+                                        color: ASSIGNEE_CONFIG[a]?.color || 'var(--text-muted)',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         fontSize: '0.65rem', border: '1px solid currentColor'
                                     }}>
-                                        {ASSIGNEE_CONFIG[a]?.emoji.substring(0, 2)}
+                                        {ASSIGNEE_CONFIG[a]?.emoji?.substring(0, 2) || '?'}
                                     </span>
                                 ))}
                             </div>
                         )}
 
-                        {task.subtasks.length > 0 && (
+                        {subtasks.length > 0 && (
                             <span>
-                                {task.subtasks.filter(s => s.done).length}/{task.subtasks.length} subtasks
+                                {subtasks.filter(s => s.done).length}/{subtasks.length} subtasks
                             </span>
                         )}
                     </div>

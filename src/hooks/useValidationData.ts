@@ -1030,8 +1030,16 @@ export function useValidationData() {
                     const pendingLocal = localTasks.filter(t => !serverIds.has(t.id));
 
                     // Merge and handle defaults
-                    const mergedTasks = [...tasksData, ...pendingLocal];
-                    const defaultTasks = createDefaultTasks();
+                    const sanitizeTask = (t: any): Task => ({
+                        ...t,
+                        subtasks: Array.isArray(t.subtasks) ? t.subtasks : [],
+                        assignees: Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : []),
+                        priority: t.priority || 'medium',
+                        weekId: t.weekId || 1
+                    });
+
+                    const mergedTasks = [...tasksData, ...pendingLocal].map(sanitizeTask);
+                    const defaultTasks = createDefaultTasks().map(sanitizeTask);
                     const existingMergedIds = new Set(mergedTasks.map((t: Task) => t.id));
                     const missingDefaults = defaultTasks.filter(t => !existingMergedIds.has(t.id));
 
