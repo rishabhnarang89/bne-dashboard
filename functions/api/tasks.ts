@@ -49,57 +49,68 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     const task = await request.json() as any;
 
                     // ✅ Input Validation
-                    const errors = validateFields(task, ['id', 'title', 'week_id', 'priority']);
-                    if (errors.length > 0) {
-                        return Response.json({ errors }, { status: 400, headers: corsHeaders });
+                    const requiredFields = ['title', 'priority'];
+                    const missing = requiredFields.filter(field => !task[field]);
+
+                    if (missing.length > 0) {
+                        return Response.json({ error: `Missing required fields: ${missing.join(', ')}` }, { status: 400, headers: corsHeaders });
                     }
+
+                    // Normalize ID: If it's a local 'custom_' ID, let's allow it as a string, or generate a UUID if needed
+                    // ideally we should treat ID as TEXT in D1 as per schema.
+                    if (!task.id) {
+                        task.id = crypto.randomUUID();
+                    }
+
+                    // Normalize week_id
+                    task.week_id = task.week_id ? parseInt(String(task.week_id)) : 1;
 
                     // Handle assignees
                     let assignees = task.assignees || [];
                     if (!task.assignees && task.assignee) {
                         assignees = [task.assignee];
-                    }
 
-                    // Backward compatible assignee (must match old check constraint: rishabh, tung, johannes, all)
-                    const validAssignees = ['rishabh', 'tung', 'johannes', 'all'];
-                    const legacyAssignee = assignees.length > 0 && validAssignees.includes(assignees[0]) ? assignees[0] : null;
+                        // Backward compatible assignee (must match old check constraint: rishabh, tung, johannes, all)
+                        const validAssignees = ['rishabh', 'tung', 'johannes', 'all'];
+                        const legacyAssignee = assignees.length > 0 && validAssignees.includes(assignees[0]) ? assignees[0] : null;
 
-                    // Security Note: All inputs are bound via .bind() to prevent SQL Injection
-                    await env.DB.prepare(`
+                        // Security Note: All inputs are bound via .bind() to prevent SQL Injection
+                        await env.DB.prepare(`
                         INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, linked_teacher_id, assignee, assignees, last_modified_by)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     `).bind(
-                        task.id,
-                        task.title,
-                        task.notes || null,
-                        task.week_id,
-                        task.priority,
-                        task.due_date || null,
-                        task.completed ? 1 : 0,
-                        task.completed_at || null,
-                        task.created_at || new Date().toISOString(),
-                        task.is_default ? 1 : 0,
-                        JSON.stringify(task.subtasks || []),
-                        task.linked_interview_id || null,
-                        task.linked_teacher_id || null,
-                        legacyAssignee,
-                        JSON.stringify(assignees),
-                        task.lastModifiedBy || task.last_modified_by || null
-                    ).run();
+                            task.id,
+                            task.title,
+                            task.notes || null,
+                            task.week_id,
+                            task.priority,
+                            task.due_date || null,
+                            task.completed ? 1 : 0,
+                            task.completed_at || null,
+                            task.created_at || new Date().toISOString(),
+                            task.is_default ? 1 : 0,
+                            JSON.stringify(task.subtasks || []),
+                            task.linked_interview_id || null,
+                            task.linked_teacher_id || null,
+                            legacyAssignee,
+                            JSON.stringify(assignees),
+                            task.lastModifiedBy || task.last_modified_by || null
+                        ).run();
 
-                    // Log Activity
-                    try {
-                        await env.DB.prepare(`
+                        // Log Activity
+                        try {
+                            await env.DB.prepare(`
                             INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
                             VALUES (?, 'CREATE', 'TASK', ?, ?, ?)
                         `).bind(
-                            task.lastModifiedBy || task.last_modified_by || 'Unknown User',
-                            task.id,
-                            task.title,
-                            JSON.stringify({ priority: task.priority, due_date: task.due_date, assignees, linked_teacher_id: task.linked_teacher_id })
-                        ).run();
-                    } catch (logError) {
-                        console.error('Failed to log activity:', logError);
+                                task.lastModifiedBy || task.last_modified_by || 'Unknown User',
+                                task.id,
+                                task.title,
+                                JSON.stringify({ priority: task.priority, due_date: task.due_date, assignees, linked_teacher_id: task.linked_teacher_id })
+                            ).run();
+                        } catch (logError) {
+                            console.error('Failed to log update:', logError);
+                        }
                     }
 
                     return Response.json({ success: true }, { headers: corsHeaders });
@@ -110,80 +121,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     }
                     throw dbError;
                 }
-            }
-
-            case 'PUT': {
-                const taskId = url.searchParams.get('id');
-                if (!taskId) return Response.json({ error: 'Missing task ID' }, { status: 400, headers: corsHeaders });
-
-                const updates = await request.json() as any;
-
-                const setClauses = [];
-                const values = [];
-
-                // Security Note: All inputs are bound via .bind() to prevent SQL Injection
-                if (updates.title !== undefined) {
-                    if (updates.title.trim() === '') return Response.json({ error: 'Title cannot be empty' }, { status: 400, headers: corsHeaders });
-                    setClauses.push('title = ?'); values.push(updates.title);
-                }
-                if (updates.notes !== undefined) { setClauses.push('notes = ?'); values.push(updates.notes || null); }
-                if (updates.week_id !== undefined) { setClauses.push('week_id = ?'); values.push(updates.week_id); }
-                if (updates.priority !== undefined) { setClauses.push('priority = ?'); values.push(updates.priority); }
-                if (updates.due_date !== undefined) { setClauses.push('due_date = ?'); values.push(updates.due_date || null); }
-                if (updates.completed !== undefined) { setClauses.push('completed = ?'); values.push(updates.completed ? 1 : 0); }
-                if (updates.completed_at !== undefined) { setClauses.push('completed_at = ?'); values.push(updates.completed_at || null); }
-                if (updates.subtasks !== undefined) { setClauses.push('subtasks = ?'); values.push(JSON.stringify(updates.subtasks)); }
-                if (updates.linked_interview_id !== undefined) { setClauses.push('linked_interview_id = ?'); values.push(updates.linked_interview_id || null); }
-                if (updates.linked_teacher_id !== undefined) { setClauses.push('linked_teacher_id = ?'); values.push(updates.linked_teacher_id || null); }
-
-                if (updates.assignees !== undefined) {
-                    const validAssignees = ['rishabh', 'tung', 'johannes', 'all'];
-                    const first = updates.assignees.length > 0 ? updates.assignees[0] : null;
-                    const legacy = validAssignees.includes(first) ? first : null;
-
-                    setClauses.push('assignees = ?');
-                    values.push(JSON.stringify(updates.assignees));
-                    setClauses.push('assignee = ?');
-                    values.push(legacy);
-                } else if (updates.assignee !== undefined) {
-                    const validAssignees = ['rishabh', 'tung', 'johannes', 'all'];
-                    const legacy = validAssignees.includes(updates.assignee) ? updates.assignee : null;
-
-                    setClauses.push('assignee = ?');
-                    values.push(legacy);
-                    setClauses.push('assignees = ?');
-                    values.push(updates.assignee ? JSON.stringify([updates.assignee]) : '[]');
-                }
-
-                if (updates.lastModifiedBy !== undefined) { setClauses.push('last_modified_by = ?'); values.push(updates.lastModifiedBy || null); }
-
-                if (setClauses.length > 0) {
-                    await env.DB.prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`)
-                        .bind(...values, taskId)
-                        .run();
-
-                    // Log Activity
-                    try {
-                        const userName = updates.lastModifiedBy || updates.last_modified_by || 'Unknown User';
-                        let actionType = 'UPDATE';
-                        if (updates.completed === true) actionType = 'COMPLETE';
-
-                        await env.DB.prepare(`
-                            INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
-                            VALUES (?, ?, 'TASK', ?, ?, ?)
-                        `).bind(
-                            userName,
-                            actionType,
-                            taskId,
-                            updates.title || `Task ID ${taskId}`,
-                            JSON.stringify(updates)
-                        ).run();
-                    } catch (logError) {
-                        console.error('Failed to log activity:', logError);
-                    }
-                }
-
-                return Response.json({ success: true }, { headers: corsHeaders });
             }
 
             case 'DELETE': {
