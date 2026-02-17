@@ -1029,6 +1029,15 @@ export function useValidationData() {
                     const serverIds = new Set(tasksData.map((t: Task) => t.id));
                     const pendingLocal = localTasks.filter(t => !serverIds.has(t.id));
 
+                    // ACTIVE SYNC: Push local-only tasks to server so they appear elsewhere
+                    if (pendingLocal.length > 0) {
+                        console.log('Syncing local pending tasks to server...', pendingLocal.length);
+                        for (const task of pendingLocal) {
+                            // Fire and forget sync to not block UI
+                            d1Client.tasks.create(task).catch(err => console.error('Background sync failed for task:', task.title, err));
+                        }
+                    }
+
                     // Merge and handle defaults
                     const sanitizeTask = (t: any): Task => ({
                         ...t,
