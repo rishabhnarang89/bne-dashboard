@@ -1,5 +1,4 @@
-// Cloudflare Functions API for Knowledge Hub
-// Handles CRUD operations for knowledge_cards and knowledge_items
+import { corsHeaders, handleError, validateFields } from './_utils';
 
 interface Env {
     DB: D1Database;
@@ -10,13 +9,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const { method } = request;
     const url = new URL(request.url);
 
-    // CORS headers
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-    };
-
     if (method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
     }
@@ -24,35 +16,32 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     try {
         switch (method) {
             case 'GET': {
-                // Fetch all cards
                 const { results: cards } = await env.DB.prepare(
                     'SELECT * FROM knowledge_cards ORDER BY sort_order, created_at DESC'
                 ).all();
 
-                // Fetch all items  
                 const { results: items } = await env.DB.prepare(
                     'SELECT * FROM knowledge_items ORDER BY sort_order, created_at DESC'
                 ).all();
 
-                // Map items to cards with camelCase properties
                 const structuredData = cards.map((card: any) => ({
                     id: card.id,
                     title: card.title,
                     description: card.description,
                     icon: card.icon,
                     color: card.color,
-                    sortOrder: card.sort_order, // Map snake_case to camelCase
+                    sortOrder: card.sort_order,
                     createdAt: card.created_at,
                     items: items
                         .filter((item: any) => item.card_id === card.id)
                         .map((item: any) => ({
                             id: item.id,
-                            cardId: item.card_id, // Map snake_case to camelCase
+                            cardId: item.card_id,
                             type: item.type,
                             title: item.title,
                             url: item.url,
                             content: item.content,
-                            sortOrder: item.sort_order, // Map snake_case to camelCase
+                            sortOrder: item.sort_order,
                             createdAt: item.created_at
                         }))
                 }));
@@ -62,9 +51,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
             case 'POST': {
                 const payload = await request.json() as any;
-                const { entityType } = payload; // 'card' or 'item'
+                const { entityType } = payload;
 
                 if (entityType === 'card') {
+                    // ✅ Input Validation
+                    const errors = validateFields(payload, ['id', 'title']);
+                    if (errors.length > 0) return Response.json({ errors }, { status: 400, headers: corsHeaders });
+
+                    // Security Note: All inputs are bound via .bind() to prevent SQL Injection
                     await env.DB.prepare(`
                         INSERT INTO knowledge_cards (id, title, description, icon, color, sort_order)
                         VALUES (?, ?, ?, ?, ?, ?)
@@ -78,6 +72,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     ).run();
 
                 } else if (entityType === 'item') {
+                    // ✅ Input Validation
+                    const errors = validateFields(payload, ['id', 'card_id', 'type', 'title']);
+                    if (errors.length > 0) return Response.json({ errors }, { status: 400, headers: corsHeaders });
+
+                    // Security Note: All inputs are bound via .bind() to prevent SQL Injection
                     await env.DB.prepare(`
                         INSERT INTO knowledge_items (id, card_id, type, title, url, content, sort_order)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -106,7 +105,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 if (entityType === 'card') {
                     const setClauses = [];
                     const values = [];
-                    if (payload.title !== undefined) { setClauses.push('title = ?'); values.push(payload.title); }
+
+                    // Security Note: All inputs are bound via .bind() to prevent SQL Injection
+                    if (payload.title !== undefined) {
+                        if (payload.title.trim() === '') return Response.json({ error: 'Title cannot be empty' }, { status: 400, headers: corsHeaders });
+                        setClauses.push('title = ?'); values.push(payload.title);
+                    }
                     if (payload.description !== undefined) { setClauses.push('description = ?'); values.push(payload.description); }
                     if (payload.icon !== undefined) { setClauses.push('icon = ?'); values.push(payload.icon); }
                     if (payload.color !== undefined) { setClauses.push('color = ?'); values.push(payload.color); }
@@ -120,9 +124,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 } else if (entityType === 'item') {
                     const setClauses = [];
                     const values = [];
+
+                    // Security Note: All inputs are bound via .bind() to prevent SQL Injection
                     if (payload.card_id !== undefined) { setClauses.push('card_id = ?'); values.push(payload.card_id); }
                     if (payload.type !== undefined) { setClauses.push('type = ?'); values.push(payload.type); }
-                    if (payload.title !== undefined) { setClauses.push('title = ?'); values.push(payload.title); }
+                    if (payload.title !== undefined) {
+                        if (payload.title.trim() === '') return Response.json({ error: 'Title cannot be empty' }, { status: 400, headers: corsHeaders });
+                        setClauses.push('title = ?'); values.push(payload.title);
+                    }
                     if (payload.url !== undefined) { setClauses.push('url = ?'); values.push(payload.url); }
                     if (payload.content !== undefined) { setClauses.push('content = ?'); values.push(payload.content); }
                     if (payload.sort_order !== undefined) { setClauses.push('sort_order = ?'); values.push(payload.sort_order); }
@@ -139,7 +148,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
             case 'DELETE': {
                 const id = url.searchParams.get('id');
-                const entityType = url.searchParams.get('entityType'); // 'card' or 'item'
+                const entityType = url.searchParams.get('entityType');
 
                 if (!id || !entityType) return new Response('Missing ID or entityType', { status: 400, headers: corsHeaders });
 
@@ -156,7 +165,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
     } catch (error) {
-        console.error('Knowledge Hub API error:', error);
-        return Response.json({ error: (error as Error).message }, { status: 500, headers: corsHeaders });
+        return handleError(error, 'Knowledge Hub API', request);
     }
 };

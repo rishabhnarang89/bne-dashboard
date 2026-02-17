@@ -1,5 +1,4 @@
-// Cloudflare Functions API for Goals
-// Handles CRUD operations for goals table in D1
+import { corsHeaders, handleError } from './_utils';
 
 interface Env {
     DB: D1Database;
@@ -8,12 +7,6 @@ interface Env {
 export const onRequest: PagesFunction<Env> = async (context) => {
     const { request, env } = context;
     const { method } = request;
-
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-    };
 
     if (method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
@@ -29,50 +22,37 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             case 'PUT': {
                 const updates = await request.json() as any;
 
-                const setClauses = [];
-                const values = [];
+                // Security Note: All inputs are bound via .bind() to prevent SQL Injection
+                const now = new Date().toISOString();
 
-                // Handle both camelCase and snake_case
-                if (updates.targetInterviews !== undefined || updates.target_interviews !== undefined) {
-                    setClauses.push('target_interviews = ?');
-                    values.push(updates.targetInterviews || updates.target_interviews);
-                }
-                if (updates.targetHighScores !== undefined || updates.target_high_scores !== undefined) {
-                    setClauses.push('target_high_scores = ?');
-                    values.push(updates.targetHighScores || updates.target_high_scores);
-                }
-                if (updates.targetPilots !== undefined || updates.target_pilots !== undefined) {
-                    setClauses.push('target_pilots = ?');
-                    values.push(updates.targetPilots || updates.target_pilots);
-                }
-                if (updates.targetSetupTime !== undefined || updates.target_setup_time !== undefined) {
-                    setClauses.push('target_setup_time = ?');
-                    values.push(updates.targetSetupTime || updates.target_setup_time);
-                }
-                if (updates.pricePoint !== undefined || updates.price_point !== undefined) {
-                    setClauses.push('price_point = ?');
-                    values.push(updates.pricePoint || updates.price_point);
-                }
+                // Fetch current values or defaults for UPSERT logic
+                const current = await env.DB.prepare('SELECT * FROM goals WHERE id = 1').first() as any || {
+                    target_interviews: 10,
+                    target_high_scores: 5,
+                    target_pilots: 3,
+                    target_setup_time: 180,
+                    price_point: 180
+                };
 
-                if (setClauses.length > 0) {
-                    setClauses.push('updated_at = ?');
-                    values.push(new Date().toISOString());
+                const data = {
+                    target_interviews: updates.targetInterviews ?? updates.target_interviews ?? current.target_interviews,
+                    target_high_scores: updates.targetHighScores ?? updates.target_high_scores ?? current.target_high_scores,
+                    target_pilots: updates.targetPilots ?? updates.target_pilots ?? current.target_pilots,
+                    target_setup_time: updates.targetSetupTime ?? updates.target_setup_time ?? current.target_setup_time,
+                    price_point: updates.pricePoint ?? updates.price_point ?? current.price_point
+                };
 
-                    // Check if row exists, if not insert it
-                    const existing = await env.DB.prepare('SELECT id FROM goals WHERE id = 1').first();
-
-                    if (!existing) {
-                        // Insert default row
-                        await env.DB.prepare(`
-                            INSERT INTO goals (id, target_interviews, target_high_scores, target_pilots, target_setup_time, price_point, created_at, updated_at)
-                            VALUES (1, 10, 5, 3, 180, 180, ?, ?)
-                        `).bind(new Date().toISOString(), new Date().toISOString()).run();
-                    }
-
-                    await env.DB.prepare(`UPDATE goals SET ${setClauses.join(', ')} WHERE id = 1`)
-                        .bind(...values)
-                        .run();
-                }
+                // ✅ Use atomic INSERT OR REPLACE (UPSERT) to prevent race conditions
+                await env.DB.prepare(`
+                    INSERT OR REPLACE INTO goals (id, target_interviews, target_high_scores, target_pilots, target_setup_time, price_point)
+                    VALUES (1, ?, ?, ?, ?, ?)
+                `).bind(
+                    data.target_interviews,
+                    data.target_high_scores,
+                    data.target_pilots,
+                    data.target_setup_time,
+                    data.price_point
+                ).run();
 
                 return Response.json({ success: true }, { headers: corsHeaders });
             }
@@ -81,7 +61,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
     } catch (error) {
-        console.error('Goals API error:', error);
-        return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
+        return handleError(error, 'Goals API', request);
     }
 };

@@ -1,5 +1,4 @@
-// Cloudflare Functions API for Teachers
-// Handles CRUD operations for teachers table in D1
+import { corsHeaders, handleError, validateFields } from './_utils';
 
 interface Env {
     DB: D1Database;
@@ -9,12 +8,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const { request, env } = context;
     const { method } = request;
     const url = new URL(request.url);
-
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-    };
 
     if (method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
@@ -36,6 +29,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
             case 'POST': {
                 const teacher = await request.json() as any;
+
+                // ✅ Input Validation
+                const errors = validateFields(teacher, ['name', 'school', 'status']);
+                if (errors.length > 0) {
+                    return Response.json({ errors }, { status: 400, headers: corsHeaders });
+                }
+
+                // Security Note: All inputs are bound via .bind() to prevent SQL Injection
                 const result = await env.DB.prepare(`
           INSERT INTO teachers (name, designation, department, school, school_type, email, linkedin_url, request_sent_date, status, notes, note_log, created_at, contact_method, response_date, last_contact_date, next_follow_up_date, linkedin_message_sent, email_sent, phone_call_made, owner, phone_number, last_modified_by)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -44,7 +45,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     teacher.designation || null,
                     teacher.department || null,
                     teacher.school,
-                    teacher.schoolType || teacher.school_type || null, // Handle both camelCase and snake_case
+                    teacher.schoolType || teacher.school_type || null,
                     teacher.email || null,
                     teacher.linkedinUrl || teacher.linkedin_url || null,
                     teacher.requestSentDate || teacher.request_sent_date || null,
@@ -77,7 +78,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     ).run();
                 } catch (logError) {
                     console.error('Failed to log activity:', logError);
-                    // Don't fail the request if logging fails
                 }
 
                 return Response.json({ success: true, id: result.meta.last_row_id }, { headers: corsHeaders });
@@ -85,12 +85,18 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
             case 'PUT': {
                 const teacherId = url.searchParams.get('id');
+                if (!teacherId) return Response.json({ error: 'Missing teacher ID' }, { status: 400, headers: corsHeaders });
+
                 const updates = await request.json() as any;
 
                 const setClauses = [];
                 const values = [];
 
-                if (updates.name !== undefined) { setClauses.push('name = ?'); values.push(updates.name); }
+                // Security Note: All inputs are bound via .bind() to prevent SQL Injection
+                if (updates.name !== undefined) {
+                    if (updates.name.trim() === '') return Response.json({ error: 'Name cannot be empty' }, { status: 400, headers: corsHeaders });
+                    setClauses.push('name = ?'); values.push(updates.name);
+                }
                 if (updates.designation !== undefined) { setClauses.push('designation = ?'); values.push(updates.designation || null); }
                 if (updates.department !== undefined) { setClauses.push('department = ?'); values.push(updates.department || null); }
                 if (updates.school !== undefined) { setClauses.push('school = ?'); values.push(updates.school); }
@@ -156,7 +162,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     // Log Activity
                     try {
                         const userName = updates.lastModifiedBy || updates.last_modified_by || 'Unknown User';
-                        // Ideally we'd fetch the name here if not provided, but for now use "Teacher ID X" if name not in updates
                         const entityName = updates.name || `Teacher ID ${teacherId}`;
 
                         await env.DB.prepare(`
@@ -166,7 +171,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                             userName,
                             teacherId,
                             entityName,
-                            JSON.stringify(updates) // Store the changes
+                            JSON.stringify(updates)
                         ).run();
                     } catch (logError) {
                         console.error('Failed to log activity:', logError);
@@ -178,8 +183,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
             case 'DELETE': {
                 const teacherId = url.searchParams.get('id');
+                if (!teacherId) return Response.json({ error: 'Missing teacher ID' }, { status: 400, headers: corsHeaders });
 
-                // Fetch teacher name before deleting for the activity log
                 let teacherName = `Teacher ID ${teacherId}`;
                 try {
                     const existing = await env.DB.prepare('SELECT name FROM teachers WHERE id = ?').bind(teacherId).first() as any;
@@ -209,7 +214,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
     } catch (error) {
-        console.error('Teachers API error:', error);
-        return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
+        return handleError(error, 'Teachers API', request);
     }
 };

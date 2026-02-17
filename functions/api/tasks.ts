@@ -1,5 +1,4 @@
-// Cloudflare Functions API for Tasks
-// Handles CRUD operations for tasks table in D1
+import { corsHeaders, handleError, validateFields } from './_utils';
 
 interface Env {
     DB: D1Database;
@@ -10,13 +9,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const { method } = request;
     const url = new URL(request.url);
 
-    // CORS headers
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-    };
-
     if (method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
     }
@@ -24,14 +16,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     try {
         switch (method) {
             case 'GET': {
-                // Get all tasks
                 const { results } = await env.DB.prepare('SELECT * FROM tasks ORDER BY week_id, created_at').all();
                 const parsedResults = results.map((task: any) => {
                     let assignees = [];
                     try {
                         assignees = task.assignees ? JSON.parse(task.assignees) : [];
                     } catch (e) {
-                        // Fallback for legacy data if migration didn't catch everything or during transition
                         if (task.assignee) assignees = [task.assignee];
                     }
 
@@ -47,16 +37,21 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             }
 
             case 'POST': {
-                // Create new task
-                const task = await request.json();
+                const task = await request.json() as any;
+
+                // ✅ Input Validation
+                const errors = validateFields(task, ['id', 'title', 'week_id', 'priority']);
+                if (errors.length > 0) {
+                    return Response.json({ errors }, { status: 400, headers: corsHeaders });
+                }
 
                 // Handle assignees
                 let assignees = task.assignees || [];
-                // Backwards compatibility for payload
                 if (!task.assignees && task.assignee) {
                     assignees = [task.assignee];
                 }
 
+                // Security Note: All inputs are bound via .bind() to prevent SQL Injection
                 await env.DB.prepare(`
           INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, linked_teacher_id, assignee, assignees, last_modified_by)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -69,12 +64,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     task.due_date || null,
                     task.completed ? 1 : 0,
                     task.completed_at || null,
-                    task.created_at,
+                    task.created_at || new Date().toISOString(),
                     task.is_default ? 1 : 0,
                     JSON.stringify(task.subtasks || []),
                     task.linked_interview_id || null,
                     task.linked_teacher_id || null,
-                    assignees.length > 0 ? assignees[0] : null, // Keep assignee for legacy compatibility if needed
+                    assignees.length > 0 ? assignees[0] : null,
                     JSON.stringify(assignees),
                     task.lastModifiedBy || task.last_modified_by || null
                 ).run();
@@ -98,14 +93,19 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             }
 
             case 'PUT': {
-                // Update task
                 const taskId = url.searchParams.get('id');
-                const updates = await request.json();
+                if (!taskId) return Response.json({ error: 'Missing task ID' }, { status: 400, headers: corsHeaders });
+
+                const updates = await request.json() as any;
 
                 const setClauses = [];
                 const values = [];
 
-                if (updates.title !== undefined) { setClauses.push('title = ?'); values.push(updates.title); }
+                // Security Note: All inputs are bound via .bind() to prevent SQL Injection
+                if (updates.title !== undefined) {
+                    if (updates.title.trim() === '') return Response.json({ error: 'Title cannot be empty' }, { status: 400, headers: corsHeaders });
+                    setClauses.push('title = ?'); values.push(updates.title);
+                }
                 if (updates.notes !== undefined) { setClauses.push('notes = ?'); values.push(updates.notes || null); }
                 if (updates.week_id !== undefined) { setClauses.push('week_id = ?'); values.push(updates.week_id); }
                 if (updates.priority !== undefined) { setClauses.push('priority = ?'); values.push(updates.priority); }
@@ -116,19 +116,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 if (updates.linked_interview_id !== undefined) { setClauses.push('linked_interview_id = ?'); values.push(updates.linked_interview_id || null); }
                 if (updates.linked_teacher_id !== undefined) { setClauses.push('linked_teacher_id = ?'); values.push(updates.linked_teacher_id || null); }
 
-                // Handle assignees update
                 if (updates.assignees !== undefined) {
                     setClauses.push('assignees = ?');
                     values.push(JSON.stringify(updates.assignees));
-
-                    // Sync legacy column
                     setClauses.push('assignee = ?');
                     values.push(updates.assignees.length > 0 ? updates.assignees[0] : null);
                 } else if (updates.assignee !== undefined) {
-                    // Legacy payload support
                     setClauses.push('assignee = ?');
                     values.push(updates.assignee || null);
-
                     setClauses.push('assignees = ?');
                     values.push(updates.assignee ? JSON.stringify([updates.assignee]) : '[]');
                 }
@@ -143,7 +138,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     // Log Activity
                     try {
                         const userName = updates.lastModifiedBy || updates.last_modified_by || 'Unknown User';
-                        // Check if completed status changed specially
                         let actionType = 'UPDATE';
                         if (updates.completed === true) actionType = 'COMPLETE';
 
@@ -166,10 +160,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             }
 
             case 'DELETE': {
-                // Delete task
                 const taskId = url.searchParams.get('id');
+                if (!taskId) return Response.json({ error: 'Missing task ID' }, { status: 400, headers: corsHeaders });
 
-                // Fetch task title before deleting for the activity log
                 let taskTitle = `Task ID ${taskId}`;
                 try {
                     const existing = await env.DB.prepare('SELECT title FROM tasks WHERE id = ?').bind(taskId).first() as any;
@@ -199,7 +192,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
     } catch (error) {
-        console.error('Tasks API error:', error);
-        return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
+        return handleError(error, 'Tasks API', request);
     }
 };

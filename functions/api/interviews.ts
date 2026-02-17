@@ -1,5 +1,4 @@
-// Cloudflare Functions API for Interviews
-// Handles CRUD operations for interviews table in D1
+import { corsHeaders, handleError, validateFields } from './_utils';
 
 interface Env {
     DB: D1Database;
@@ -9,12 +8,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const { request, env } = context;
     const { method } = request;
     const url = new URL(request.url);
-
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-    };
 
     if (method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
@@ -33,15 +26,23 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             }
 
             case 'POST': {
-                const interview = await request.json();
+                const interview = await request.json() as any;
+
+                // ✅ Input Validation
+                const errors = validateFields(interview, ['teacher_id', 'date', 'status']);
+                if (errors.length > 0) {
+                    return Response.json({ errors }, { status: 400, headers: corsHeaders });
+                }
+
+                // Security Note: All inputs are bound via .bind() to prevent SQL Injection
                 const result = await env.DB.prepare(`
           INSERT INTO interviews (teacher_id, date, scheduled_date, status, duration, time_spent, setup_time, success, score, commitment, price_reaction, notes, questions, key_insights, interviewer, observer, created_at, last_modified_by)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
-                    interview.teacher_id || null,
-                    interview.date || null,
+                    interview.teacher_id,
+                    interview.date,
                     interview.scheduled_date || null,
-                    interview.status || null,
+                    interview.status,
                     interview.duration || null,
                     interview.time_spent || null,
                     interview.setup_time || null,
@@ -78,11 +79,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
             case 'PUT': {
                 const interviewId = url.searchParams.get('id');
-                const updates = await request.json();
+                if (!interviewId) return Response.json({ error: 'Missing interview ID' }, { status: 400, headers: corsHeaders });
+
+                const updates = await request.json() as any;
 
                 const setClauses = [];
                 const values = [];
 
+                // Security Note: All inputs are bound via .bind() to prevent SQL Injection
                 if (updates.teacher_id !== undefined) { setClauses.push('teacher_id = ?'); values.push(updates.teacher_id); }
                 if (updates.date !== undefined) { setClauses.push('date = ?'); values.push(updates.date); }
                 if (updates.scheduled_date !== undefined) { setClauses.push('scheduled_date = ?'); values.push(updates.scheduled_date || null); }
@@ -99,7 +103,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 if (updates.key_insights !== undefined) { setClauses.push('key_insights = ?'); values.push(JSON.stringify(updates.key_insights)); }
                 if (updates.interviewer !== undefined) { setClauses.push('interviewer = ?'); values.push(updates.interviewer || null); }
                 if (updates.observer !== undefined) { setClauses.push('observer = ?'); values.push(updates.observer || null); }
-                if (updates.lastModifiedBy !== undefined) { setClauses.push('last_modified_by = ?'); values.push(updates.lastModifiedBy || null); }
+                if (updates.lastModifiedBy !== undefined || updates.last_modified_by !== undefined) {
+                    setClauses.push('last_modified_by = ?');
+                    values.push(updates.lastModifiedBy || updates.last_modified_by || null);
+                }
 
                 if (setClauses.length > 0) {
                     await env.DB.prepare(`UPDATE interviews SET ${setClauses.join(', ')} WHERE id = ?`)
@@ -128,8 +135,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
             case 'DELETE': {
                 const interviewId = url.searchParams.get('id');
+                if (!interviewId) return Response.json({ error: 'Missing interview ID' }, { status: 400, headers: corsHeaders });
 
-                // Fetch interview info before deleting for the activity log
                 let entityName = `Interview ID ${interviewId}`;
                 try {
                     const existing = await env.DB.prepare('SELECT teacher_id FROM interviews WHERE id = ?').bind(interviewId).first() as any;
@@ -159,7 +166,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
     } catch (error) {
-        console.error('Interviews API error:', error);
-        return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
+        return handleError(error, 'Interviews API', request);
     }
 };
