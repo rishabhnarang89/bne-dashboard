@@ -919,6 +919,26 @@ export function useValidationData() {
     }, []);
     const [lastActivity, setLastActivity] = useState<string>(new Date().toISOString());
 
+    // Immediate restore from localStorage to prevent blank UI on slow/broken API
+    useEffect(() => {
+        const restore = (key: string, setter: (val: any) => void) => {
+            const saved = localStorage.getItem(key);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) setter(parsed);
+                    else if (!Array.isArray(parsed) && parsed && Object.keys(parsed).length > 0) setter(parsed);
+                } catch (e) { console.error(`Restore error for ${key}:`, e); }
+            }
+        };
+
+        restore('bne_tasks_v2', setTasks);
+        restore('bne_teachers_v2', setTeachers);
+        restore('bne_interviews_v2', setInterviews);
+        restore('bne_goals_v2', setGoals);
+        restore('bne_knowledge_cards_v2', setKnowledgeCards);
+    }, []);
+
     // ========================================================================
     // INITIAL DATA LOAD
     // ========================================================================
@@ -996,24 +1016,30 @@ export function useValidationData() {
                     fetch('/api/knowledge').then(res => res.ok ? res.json() : null)
                 ]);
 
-                // Sync new default tasks if they don't exist
-                const defaultTasks = createDefaultTasks();
-                const existingIds = new Set(tasksData.map((t: Task) => t.id));
-                const missingTasks = defaultTasks.filter(t => !existingIds.has(t.id));
+                // Defensive Update: Only apply server data if it's non-empty or if local state is currently empty
+                // This prevents a broken/empty API from wiping out a rich localStorage backup
+                if (Array.isArray(tasksData) && (tasksData.length > 0 || tasks.length === 0)) {
+                    const defaultTasks = createDefaultTasks();
+                    const existingIds = new Set(tasksData.map((t: Task) => t.id));
+                    const missingTasks = defaultTasks.filter(t => !existingIds.has(t.id));
 
-                if (missingTasks.length > 0) {
-                    // Add missing tasks to D1
-                    for (const task of missingTasks) {
-                        await d1Client.tasks.create(task);
+                    if (missingTasks.length > 0) {
+                        for (const task of missingTasks) {
+                            try { await d1Client.tasks.create(task); } catch (e) { /* ignore seeding errors */ }
+                        }
+                        setTasks([...tasksData, ...missingTasks]);
+                    } else {
+                        setTasks(tasksData);
                     }
-                    // Update local state with merged tasks
-                    setTasks([...tasksData, ...missingTasks]);
-                } else {
-                    setTasks(tasksData);
                 }
 
-                setTeachers(teachersData);
-                setInterviews(interviewsData);
+                if (Array.isArray(teachersData) && (teachersData.length > 0 || teachers.length === 0)) {
+                    setTeachers(teachersData);
+                }
+
+                if (Array.isArray(interviewsData) && (interviewsData.length > 0 || interviews.length === 0)) {
+                    setInterviews(interviewsData);
+                }
 
                 if (goalsData && Object.keys(goalsData).length > 0) {
                     setGoals(goalsData);
@@ -1131,11 +1157,12 @@ export function useValidationData() {
 
 
     useEffect(() => { localStorage.setItem('bne_tasks_v2', JSON.stringify(tasks)); }, [tasks]);
-    useEffect(() => { localStorage.setItem('bne_interviews', JSON.stringify(interviews)); }, [interviews]);
-    useEffect(() => { localStorage.setItem('bne_goals', JSON.stringify(goals)); }, [goals]);
+    useEffect(() => { localStorage.setItem('bne_teachers_v2', JSON.stringify(teachers)); }, [teachers]);
+    useEffect(() => { localStorage.setItem('bne_interviews_v2', JSON.stringify(interviews)); }, [interviews]);
+    useEffect(() => { localStorage.setItem('bne_goals_v2', JSON.stringify(goals)); }, [goals]);
     useEffect(() => { localStorage.setItem('bne_darkMode', JSON.stringify(darkMode)); document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light'); }, [darkMode]);
     useEffect(() => { localStorage.setItem('bne_lastActivity', lastActivity); }, [lastActivity]);
-    useEffect(() => { localStorage.setItem('bne_knowledge_cards', JSON.stringify(knowledgeCards)); }, [knowledgeCards]);
+    useEffect(() => { localStorage.setItem('bne_knowledge_cards_v2', JSON.stringify(knowledgeCards)); }, [knowledgeCards]);
 
     // ========================================================================
     // TASK ACTIONS

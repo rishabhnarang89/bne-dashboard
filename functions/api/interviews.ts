@@ -16,13 +16,21 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     try {
         switch (method) {
             case 'GET': {
-                const { results } = await env.DB.prepare('SELECT * FROM interviews ORDER BY date DESC').all();
-                const parsedResults = results.map((interview: any) => ({
-                    ...interview,
-                    questions: typeof interview.questions === 'string' ? JSON.parse(interview.questions) : (interview.questions || []),
-                    key_insights: typeof interview.key_insights === 'string' ? JSON.parse(interview.key_insights) : (interview.key_insights || [])
-                }));
-                return Response.json(parsedResults, { headers: corsHeaders });
+                try {
+                    const { results } = await env.DB.prepare('SELECT * FROM interviews ORDER BY date DESC').all();
+                    const parsedResults = results.map((interview: any) => ({
+                        ...interview,
+                        questions: typeof interview.questions === 'string' ? JSON.parse(interview.questions) : (interview.questions || []),
+                        key_insights: typeof interview.key_insights === 'string' ? JSON.parse(interview.key_insights) : (interview.key_insights || [])
+                    }));
+                    return Response.json(parsedResults, { headers: corsHeaders });
+                } catch (dbError: any) {
+                    if (dbError.message?.includes('no such table')) {
+                        console.error('DATABASE TABLE MISSING in production:', dbError.message);
+                        return Response.json([], { headers: corsHeaders });
+                    }
+                    throw dbError;
+                }
             }
 
             case 'POST': {

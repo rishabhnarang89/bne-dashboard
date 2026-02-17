@@ -16,24 +16,32 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     try {
         switch (method) {
             case 'GET': {
-                const { results } = await env.DB.prepare('SELECT * FROM tasks ORDER BY week_id, created_at').all();
-                const parsedResults = results.map((task: any) => {
-                    let assignees = [];
-                    try {
-                        assignees = task.assignees ? JSON.parse(task.assignees) : [];
-                    } catch (e) {
-                        if (task.assignee) assignees = [task.assignee];
-                    }
+                try {
+                    const { results } = await env.DB.prepare('SELECT * FROM tasks ORDER BY week_id, created_at').all();
+                    const parsedResults = results.map((task: any) => {
+                        let assignees = [];
+                        try {
+                            assignees = task.assignees ? JSON.parse(task.assignees) : [];
+                        } catch (e) {
+                            if (task.assignee) assignees = [task.assignee];
+                        }
 
-                    return {
-                        ...task,
-                        completed: task.completed === 1,
-                        is_default: task.is_default === 1,
-                        subtasks: typeof task.subtasks === 'string' ? JSON.parse(task.subtasks) : (task.subtasks || []),
-                        assignees: assignees
-                    };
-                });
-                return Response.json(parsedResults, { headers: corsHeaders });
+                        return {
+                            ...task,
+                            completed: task.completed === 1,
+                            is_default: task.is_default === 1,
+                            subtasks: typeof task.subtasks === 'string' ? JSON.parse(task.subtasks) : (task.subtasks || []),
+                            assignees: assignees
+                        };
+                    });
+                    return Response.json(parsedResults, { headers: corsHeaders });
+                } catch (dbError: any) {
+                    if (dbError.message?.includes('no such table')) {
+                        console.error('DATABASE TABLE MISSING in production:', dbError.message);
+                        return Response.json([], { headers: corsHeaders }); // Return empty rather than 500
+                    }
+                    throw dbError;
+                }
             }
 
             case 'POST': {
