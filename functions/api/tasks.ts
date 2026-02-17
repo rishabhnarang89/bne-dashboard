@@ -45,59 +45,67 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             }
 
             case 'POST': {
-                const task = await request.json() as any;
-
-                // ✅ Input Validation
-                const errors = validateFields(task, ['id', 'title', 'week_id', 'priority']);
-                if (errors.length > 0) {
-                    return Response.json({ errors }, { status: 400, headers: corsHeaders });
-                }
-
-                // Handle assignees
-                let assignees = task.assignees || [];
-                if (!task.assignees && task.assignee) {
-                    assignees = [task.assignee];
-                }
-
-                // Security Note: All inputs are bound via .bind() to prevent SQL Injection
-                await env.DB.prepare(`
-          INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, linked_teacher_id, assignee, assignees, last_modified_by)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(
-                    task.id,
-                    task.title,
-                    task.notes || null,
-                    task.week_id,
-                    task.priority,
-                    task.due_date || null,
-                    task.completed ? 1 : 0,
-                    task.completed_at || null,
-                    task.created_at || new Date().toISOString(),
-                    task.is_default ? 1 : 0,
-                    JSON.stringify(task.subtasks || []),
-                    task.linked_interview_id || null,
-                    task.linked_teacher_id || null,
-                    assignees.length > 0 ? assignees[0] : null,
-                    JSON.stringify(assignees),
-                    task.lastModifiedBy || task.last_modified_by || null
-                ).run();
-
-                // Log Activity
                 try {
+                    const task = await request.json() as any;
+
+                    // ✅ Input Validation
+                    const errors = validateFields(task, ['id', 'title', 'week_id', 'priority']);
+                    if (errors.length > 0) {
+                        return Response.json({ errors }, { status: 400, headers: corsHeaders });
+                    }
+
+                    // Handle assignees
+                    let assignees = task.assignees || [];
+                    if (!task.assignees && task.assignee) {
+                        assignees = [task.assignee];
+                    }
+
+                    // Security Note: All inputs are bound via .bind() to prevent SQL Injection
                     await env.DB.prepare(`
-                        INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
-                        VALUES (?, 'CREATE', 'TASK', ?, ?, ?)
+                        INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, linked_teacher_id, assignee, assignees, last_modified_by)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     `).bind(
-                        task.lastModifiedBy || task.last_modified_by || 'Unknown User',
                         task.id,
                         task.title,
-                        JSON.stringify({ priority: task.priority, due_date: task.due_date, assignees, linked_teacher_id: task.linked_teacher_id })
+                        task.notes || null,
+                        task.week_id,
+                        task.priority,
+                        task.due_date || null,
+                        task.completed ? 1 : 0,
+                        task.completed_at || null,
+                        task.created_at || new Date().toISOString(),
+                        task.is_default ? 1 : 0,
+                        JSON.stringify(task.subtasks || []),
+                        task.linked_interview_id || null,
+                        task.linked_teacher_id || null,
+                        assignees.length > 0 ? assignees[0] : null,
+                        JSON.stringify(assignees),
+                        task.lastModifiedBy || task.last_modified_by || null
                     ).run();
-                } catch (logError) {
-                    console.error('Failed to log activity:', logError);
-                }
 
-                return Response.json({ success: true }, { headers: corsHeaders });
+                    // Log Activity
+                    try {
+                        await env.DB.prepare(`
+                            INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                            VALUES (?, 'CREATE', 'TASK', ?, ?, ?)
+                        `).bind(
+                            task.lastModifiedBy || task.last_modified_by || 'Unknown User',
+                            task.id,
+                            task.title,
+                            JSON.stringify({ priority: task.priority, due_date: task.due_date, assignees, linked_teacher_id: task.linked_teacher_id })
+                        ).run();
+                    } catch (logError) {
+                        console.error('Failed to log activity:', logError);
+                    }
+
+                    return Response.json({ success: true }, { headers: corsHeaders });
+                } catch (dbError: any) {
+                    if (dbError.message?.includes('no such table')) {
+                        console.error('DATABASE TABLE MISSING in production:', dbError.message);
+                        return Response.json({ error: 'Database table missing' }, { status: 503, headers: corsHeaders });
+                    }
+                    throw dbError;
+                }
             }
 
             case 'PUT': {

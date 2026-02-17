@@ -1017,8 +1017,12 @@ export function useValidationData() {
                 ]);
 
                 // Defensive Update: Only apply server data if it's non-empty or if local state is currently empty
-                // This prevents a broken/empty API from wiping out a rich localStorage backup
-                if (Array.isArray(tasksData) && (tasksData.length > 0 || tasks.length === 0)) {
+                // We check localStorage directly to avoid stale closure issues with the state variables
+                const hasLocalTasks = !!localStorage.getItem('bne_tasks_v2');
+                const hasLocalTeachers = !!localStorage.getItem('bne_teachers_v2');
+                const hasLocalInterviews = !!localStorage.getItem('bne_interviews_v2');
+
+                if (Array.isArray(tasksData) && (tasksData.length > 0 || !hasLocalTasks)) {
                     const defaultTasks = createDefaultTasks();
                     const existingIds = new Set(tasksData.map((t: Task) => t.id));
                     const missingTasks = defaultTasks.filter(t => !existingIds.has(t.id));
@@ -1033,11 +1037,11 @@ export function useValidationData() {
                     }
                 }
 
-                if (Array.isArray(teachersData) && (teachersData.length > 0 || teachers.length === 0)) {
+                if (Array.isArray(teachersData) && (teachersData.length > 0 || !hasLocalTeachers)) {
                     setTeachers(teachersData);
                 }
 
-                if (Array.isArray(interviewsData) && (interviewsData.length > 0 || interviews.length === 0)) {
+                if (Array.isArray(interviewsData) && (interviewsData.length > 0 || !hasLocalInterviews)) {
                     setInterviews(interviewsData);
                 }
 

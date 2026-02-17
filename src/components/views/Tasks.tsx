@@ -115,34 +115,40 @@ export const Tasks = () => {
     }, [filteredTasks, groupBy, WEEKS]);
 
     // Handlers
-    const handleSave = () => {
-        if (!currentTask.title?.trim()) return;
+    const handleSave = async () => {
+        try {
+            if (!currentTask.title?.trim()) return;
 
-        if (isCreating) {
-            addTask({
-                title: currentTask.title,
-                notes: currentTask.notes,
-                priority: currentTask.priority || 'medium',
-                weekId: currentTask.weekId || 1,
-                assignees: currentTask.assignees || [], // Default to empty
-                linkedTeacherId: currentTask.linkedTeacherId,
-                completed: false
-            });
-            showToast('Task created', 'success');
-        } else if (currentTask.id) {
-            updateTask(currentTask.id, {
-                title: currentTask.title,
-                notes: currentTask.notes,
-                priority: currentTask.priority,
-                weekId: currentTask.weekId,
-                dueDate: currentTask.dueDate,
-                assignees: currentTask.assignees,
-                linkedTeacherId: currentTask.linkedTeacherId,
-                assignee: currentTask.assignees?.[0] // Backward compat
-            });
-            showToast('Task updated', 'success');
+            if (isCreating) {
+                await addTask({
+                    title: currentTask.title,
+                    notes: currentTask.notes,
+                    priority: currentTask.priority || 'medium',
+                    weekId: currentTask.weekId || 1,
+                    assignees: currentTask.assignees || [], // Default to empty
+                    linkedTeacherId: currentTask.linkedTeacherId,
+                    completed: false
+                });
+                showToast('Task created', 'success');
+            } else if (currentTask.id) {
+                await updateTask(currentTask.id, {
+                    title: currentTask.title,
+                    notes: currentTask.notes,
+                    priority: currentTask.priority,
+                    weekId: currentTask.weekId,
+                    dueDate: currentTask.dueDate,
+                    assignees: currentTask.assignees,
+                    linkedTeacherId: currentTask.linkedTeacherId,
+                    assignee: currentTask.assignees?.[0] // Backward compat
+                });
+                showToast('Task updated', 'success');
+            }
+            setEditModalOpen(false);
+        } catch (error) {
+            console.error('Error in handleSave:', error);
+            showToast('Failed to save task', 'error');
+            // Keep modal open so data isn't lost if there was a REAL crash
         }
-        setEditModalOpen(false);
     };
 
     const openEdit = (task: Task) => {
