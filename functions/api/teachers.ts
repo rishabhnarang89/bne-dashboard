@@ -219,6 +219,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
     } catch (error) {
+        // Final fallback: If everything else fails, return a safe empty response for GET
+        if (method === 'GET') {
+            console.error('FATAL API ERROR (GET fallback):', error);
+            return Response.json([], { headers: corsHeaders });
+        }
         return handleError(error, 'Teachers API', request);
     }
 };

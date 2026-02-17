@@ -171,6 +171,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
     } catch (error) {
+        if (method === 'GET') {
+            console.error('FATAL API ERROR (Interviews GET fallback):', error);
+            return Response.json([], { headers: corsHeaders });
+        }
         return handleError(error, 'Interviews API', request);
     }
 };

@@ -1013,17 +1013,20 @@ export function useValidationData() {
                 // Defensive Update: Only apply server data if it's non-empty or if local state is empty
                 // This prevents a broken/empty API from wiping out a rich localStorage backup
                 if (Array.isArray(tasksData) && (tasksData.length > 0 || tasks.length === 0)) {
+                    // Start with server data if available, but preserve local tasks if server is empty
+                    const baseTasks = (tasksData.length > 0) ? tasksData : [...tasks];
+
                     // Sync new default tasks if they don't exist
                     const defaultTasks = createDefaultTasks();
-                    const existingIds = new Set(tasksData.map((t: Task) => t.id));
+                    const existingIds = new Set(baseTasks.map((t: Task) => t.id));
                     const missingTasks = defaultTasks.filter(t => !existingIds.has(t.id));
 
                     if (missingTasks.length > 0) {
                         for (const task of missingTasks) {
                             try { await d1Client.tasks.create(task); } catch (e) { /* ignore seeding errors */ }
                         }
-                        setTasks([...tasksData, ...missingTasks]);
-                    } else {
+                        setTasks([...baseTasks, ...missingTasks]);
+                    } else if (tasksData.length > 0) {
                         setTasks(tasksData);
                     }
                 }

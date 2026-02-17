@@ -170,6 +170,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
     } catch (error) {
-        return handleError(error, 'Knowledge Hub API', request);
+        if (method === 'GET') {
+            console.error('FATAL API ERROR (Knowledge GET fallback):', error);
+            return Response.json([], { headers: corsHeaders });
+        }
+        return handleError(error, 'Knowledge API', request);
     }
 };
