@@ -15,8 +15,16 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     try {
         switch (method) {
             case 'GET': {
-                const result = await env.DB.prepare('SELECT * FROM goals WHERE id = 1').first();
-                return Response.json(result || {}, { headers: corsHeaders });
+                try {
+                    const { results } = await env.DB.prepare('SELECT * FROM goals LIMIT 1').all();
+                    return Response.json(results && results.length > 0 ? results[0] : {}, { headers: corsHeaders });
+                } catch (error: any) {
+                    if (error.message?.includes('no such table')) {
+                        console.error('DATABASE TABLE MISSING (goals):', error.message);
+                        return Response.json({}, { headers: corsHeaders });
+                    }
+                    throw error;
+                }
             }
 
             case 'PUT': {

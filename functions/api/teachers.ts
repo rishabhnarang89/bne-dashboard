@@ -16,15 +16,23 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     try {
         switch (method) {
             case 'GET': {
-                const { results } = await env.DB.prepare('SELECT * FROM teachers ORDER BY created_at DESC').all();
-                const mappedResults = results.map((teacher: any) => ({
-                    ...teacher,
-                    linkedin_message_sent: teacher.linkedin_message_sent === 1,
-                    email_sent: teacher.email_sent === 1,
-                    phone_call_made: teacher.phone_call_made === 1,
-                    noteLog: teacher.note_log ? JSON.parse(teacher.note_log) : []
-                }));
-                return Response.json(mappedResults, { headers: corsHeaders });
+                try {
+                    const { results } = await env.DB.prepare('SELECT * FROM teachers ORDER BY created_at DESC').all();
+                    const mappedResults = (results || []).map((teacher: any) => ({
+                        ...teacher,
+                        linkedin_message_sent: teacher.linkedin_message_sent === 1,
+                        email_sent: teacher.email_sent === 1,
+                        phone_call_made: teacher.phone_call_made === 1,
+                        noteLog: teacher.note_log ? JSON.parse(teacher.note_log) : []
+                    }));
+                    return Response.json(mappedResults, { headers: corsHeaders });
+                } catch (error: any) {
+                    if (error.message?.includes('no such table')) {
+                        console.error('DATABASE TABLE MISSING (teachers):', error.message);
+                        return Response.json([], { headers: corsHeaders });
+                    }
+                    throw error;
+                }
             }
 
             case 'POST': {

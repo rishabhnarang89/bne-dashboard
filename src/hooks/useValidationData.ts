@@ -884,13 +884,38 @@ export function useValidationData() {
     const [isLoading, setIsLoading] = useState(true);
     const [syncError, setSyncError] = useState<string | null>(null);
 
-    // State
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [teachers, setTeachers] = useState<Teacher[]>([]);
-    const [interviews, setInterviews] = useState<Interview[]>([]);
+    // State with immediate LocalStorage restoration (Defensive Frontend)
+    const [tasks, setTasks] = useState<Task[]>(() => {
+        try {
+            const saved = localStorage.getItem('bne_tasks_v2');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
+    const [teachers, setTeachers] = useState<Teacher[]>(() => {
+        try {
+            const saved = localStorage.getItem('bne_teachers');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
+    const [interviews, setInterviews] = useState<Interview[]>(() => {
+        try {
+            const saved = localStorage.getItem('bne_interviews');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
     const [reflections, setReflections] = useState<WeeklyReflection[]>([]);
-    const [goals, setGoals] = useState<GoalSettings>(DEFAULT_GOALS);
-    const [knowledgeCards, setKnowledgeCards] = useState<KnowledgeCard[]>([]);
+    const [goals, setGoals] = useState<GoalSettings>(() => {
+        try {
+            const saved = localStorage.getItem('bne_goals');
+            return saved ? JSON.parse(saved) : DEFAULT_GOALS;
+        } catch { return DEFAULT_GOALS; }
+    });
+    const [knowledgeCards, setKnowledgeCards] = useState<KnowledgeCard[]>(() => {
+        try {
+            const saved = localStorage.getItem('bne_knowledge_cards');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
     const [darkMode, setDarkMode] = useState<boolean>(() => {
         try {
             const saved = localStorage.getItem('bne_darkMode');
@@ -903,21 +928,10 @@ export function useValidationData() {
         return false;
     });
 
-    // Immediate restore from localStorage to prevent blank UI on slow/broken API
-    useEffect(() => {
-        const savedKB = localStorage.getItem('bne_knowledge_cards');
-        if (savedKB) {
-            try {
-                const parsed = JSON.parse(savedKB);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    setKnowledgeCards(parsed);
-                }
-            } catch (e) {
-                console.error('Initial KB restore error:', e);
-            }
-        }
-    }, []);
-    const [lastActivity, setLastActivity] = useState<string>(new Date().toISOString());
+    // Last activity
+    const [lastActivity, setLastActivity] = useState<string>(() => {
+        return localStorage.getItem('bne_lastActivity') || new Date().toISOString();
+    });
 
     // ========================================================================
     // INITIAL DATA LOAD
@@ -996,24 +1010,31 @@ export function useValidationData() {
                     fetch('/api/knowledge').then(res => res.ok ? res.json() : null)
                 ]);
 
-                // Sync new default tasks if they don't exist
-                const defaultTasks = createDefaultTasks();
-                const existingIds = new Set(tasksData.map((t: Task) => t.id));
-                const missingTasks = defaultTasks.filter(t => !existingIds.has(t.id));
+                // Defensive Update: Only apply server data if it's non-empty or if local state is empty
+                // This prevents a broken/empty API from wiping out a rich localStorage backup
+                if (Array.isArray(tasksData) && (tasksData.length > 0 || tasks.length === 0)) {
+                    // Sync new default tasks if they don't exist
+                    const defaultTasks = createDefaultTasks();
+                    const existingIds = new Set(tasksData.map((t: Task) => t.id));
+                    const missingTasks = defaultTasks.filter(t => !existingIds.has(t.id));
 
-                if (missingTasks.length > 0) {
-                    // Add missing tasks to D1
-                    for (const task of missingTasks) {
-                        await d1Client.tasks.create(task);
+                    if (missingTasks.length > 0) {
+                        for (const task of missingTasks) {
+                            try { await d1Client.tasks.create(task); } catch (e) { /* ignore seeding errors */ }
+                        }
+                        setTasks([...tasksData, ...missingTasks]);
+                    } else {
+                        setTasks(tasksData);
                     }
-                    // Update local state with merged tasks
-                    setTasks([...tasksData, ...missingTasks]);
-                } else {
-                    setTasks(tasksData);
                 }
 
-                setTeachers(teachersData);
-                setInterviews(interviewsData);
+                if (Array.isArray(teachersData) && (teachersData.length > 0 || teachers.length === 0)) {
+                    setTeachers(teachersData);
+                }
+
+                if (Array.isArray(interviewsData) && (interviewsData.length > 0 || interviews.length === 0)) {
+                    setInterviews(interviewsData);
+                }
 
                 if (goalsData && Object.keys(goalsData).length > 0) {
                     setGoals(goalsData);
@@ -1062,63 +1083,28 @@ export function useValidationData() {
         };
 
         const loadFromLocalStorage = () => {
-            // Tasks
-            const savedTasks = localStorage.getItem('bne_tasks_v2');
-            if (savedTasks) {
-                setTasks(JSON.parse(savedTasks));
-            } else {
-                const oldTasks = localStorage.getItem('bne_tasks');
-                let initialTasks: Task[] = [];
+            // No longer strictly needed as we initialize state from localStorage,
+            // but kept as an emergency fallback if loadData fails completely.
+            const sTasks = localStorage.getItem('bne_tasks_v2');
+            if (sTasks) setTasks(JSON.parse(sTasks));
 
-                if (oldTasks) {
-                    const oldData = JSON.parse(oldTasks);
-                    initialTasks = createDefaultTasks().map(t => ({ ...t, completed: oldData[t.id] || false }));
-                } else {
-                    initialTasks = createDefaultTasks();
-                }
+            const sTeachers = localStorage.getItem('bne_teachers');
+            if (sTeachers) setTeachers(JSON.parse(sTeachers));
 
-                // Merge with any potentially missing new defaults if we loaded from v2 but it has gaps
-                // (Optimistic merge for simplicity in fallback mode)
-                const existingIds = new Set(initialTasks.map(t => t.id));
-                const missingDefaults = createDefaultTasks().filter(t => !existingIds.has(t.id));
-                setTasks([...initialTasks, ...missingDefaults]);
-            }
+            const sInterviews = localStorage.getItem('bne_interviews');
+            if (sInterviews) setInterviews(JSON.parse(sInterviews));
 
-            // Ensure even if we loaded v2, we check for missing defaults
-            if (savedTasks) {
-                const loadedTasks = JSON.parse(savedTasks);
-                const existingIds = new Set(loadedTasks.map((t: Task) => t.id));
-                const missingDefaults = createDefaultTasks().filter(t => !existingIds.has(t.id));
-                setTasks([...loadedTasks, ...missingDefaults]);
-            }
+            const sGoals = localStorage.getItem('bne_goals');
+            if (sGoals) setGoals(JSON.parse(sGoals));
 
-            // Interviews
-            const savedInterviews = localStorage.getItem('bne_interviews_v2');
-            if (savedInterviews) {
-                setInterviews(JSON.parse(savedInterviews));
-            }
+            const sKB = localStorage.getItem('bne_knowledge_cards');
+            if (sKB) setKnowledgeCards(JSON.parse(sKB));
 
-            // Teachers
-            const savedTeachers = localStorage.getItem('bne_teachers');
-            if (savedTeachers) {
-                setTeachers(JSON.parse(savedTeachers));
-            }
+            const sDarkMode = localStorage.getItem('bne_darkMode');
+            if (sDarkMode) setDarkMode(JSON.parse(sDarkMode));
 
-            // Goals
-            const savedGoals = localStorage.getItem('bne_goals');
-            if (savedGoals) setGoals(JSON.parse(savedGoals));
-
-            // Dark mode
-            const savedDarkMode = localStorage.getItem('bne_darkMode');
-            if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
-
-            // Last activity
-            const savedLastActivity = localStorage.getItem('bne_lastActivity');
-            if (savedLastActivity) setLastActivity(savedLastActivity);
-
-            // Knowledge Cards backup
-            const savedKB = localStorage.getItem('bne_knowledge_cards');
-            if (savedKB) setKnowledgeCards(JSON.parse(savedKB));
+            const sLastActivity = localStorage.getItem('bne_lastActivity');
+            if (sLastActivity) setLastActivity(sLastActivity);
         };
 
         loadData();
