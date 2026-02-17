@@ -16,20 +16,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     try {
         switch (method) {
             case 'GET': {
-                try {
-                    const { results } = await env.DB.prepare('SELECT * FROM teachers ORDER BY created_at DESC').all();
-                    const mappedResults = (results || []).map((teacher: any) => ({
-                        ...teacher,
-                        linkedin_message_sent: teacher.linkedin_message_sent === 1,
-                        email_sent: teacher.email_sent === 1,
-                        phone_call_made: teacher.phone_call_made === 1,
-                        noteLog: teacher.note_log ? JSON.parse(teacher.note_log) : []
-                    }));
-                    return Response.json(mappedResults, { headers: corsHeaders });
-                } catch (error) {
-                    console.error('DATABASE ERROR (teachers):', error);
-                    return Response.json([], { headers: corsHeaders });
-                }
+                const { results } = await env.DB.prepare('SELECT * FROM teachers ORDER BY created_at DESC').all();
+                const mappedResults = results.map((teacher: any) => ({
+                    ...teacher,
+                    linkedin_message_sent: teacher.linkedin_message_sent === 1,
+                    email_sent: teacher.email_sent === 1,
+                    phone_call_made: teacher.phone_call_made === 1,
+                    noteLog: teacher.note_log ? JSON.parse(teacher.note_log) : []
+                }));
+                return Response.json(mappedResults, { headers: corsHeaders });
             }
 
             case 'POST': {
@@ -219,11 +214,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
     } catch (error) {
-        // Final fallback: If everything else fails, return a safe empty response for GET
-        if (method === 'GET') {
-            console.error('FATAL API ERROR (GET fallback):', error);
-            return Response.json([], { headers: corsHeaders });
-        }
         return handleError(error, 'Teachers API', request);
     }
 };

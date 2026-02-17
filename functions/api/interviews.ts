@@ -16,18 +16,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     try {
         switch (method) {
             case 'GET': {
-                try {
-                    const { results } = await env.DB.prepare('SELECT * FROM interviews ORDER BY date DESC').all();
-                    const parsedResults = (results || []).map((interview: any) => ({
-                        ...interview,
-                        questions: typeof interview.questions === 'string' ? JSON.parse(interview.questions) : (interview.questions || []),
-                        key_insights: typeof interview.key_insights === 'string' ? JSON.parse(interview.key_insights) : (interview.key_insights || [])
-                    }));
-                    return Response.json(parsedResults, { headers: corsHeaders });
-                } catch (error) {
-                    console.error('DATABASE ERROR (interviews):', error);
-                    return Response.json([], { headers: corsHeaders });
-                }
+                const { results } = await env.DB.prepare('SELECT * FROM interviews ORDER BY date DESC').all();
+                const parsedResults = results.map((interview: any) => ({
+                    ...interview,
+                    questions: typeof interview.questions === 'string' ? JSON.parse(interview.questions) : (interview.questions || []),
+                    key_insights: typeof interview.key_insights === 'string' ? JSON.parse(interview.key_insights) : (interview.key_insights || [])
+                }));
+                return Response.json(parsedResults, { headers: corsHeaders });
             }
 
             case 'POST': {
@@ -171,10 +166,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
     } catch (error) {
-        if (method === 'GET') {
-            console.error('FATAL API ERROR (Interviews GET fallback):', error);
-            return Response.json([], { headers: corsHeaders });
-        }
         return handleError(error, 'Interviews API', request);
     }
 };

@@ -25,7 +25,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                         'SELECT * FROM knowledge_items ORDER BY sort_order, created_at DESC'
                     ).all();
 
-                    const structuredData = (cards || []).map((card: any) => ({
+                    const structuredData = cards.map((card: any) => ({
                         id: card.id,
                         title: card.title,
                         description: card.description,
@@ -48,9 +48,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                     }));
 
                     return Response.json(structuredData, { headers: corsHeaders });
-                } catch (error) {
-                    console.error('DATABASE ERROR (knowledge):', error);
-                    return Response.json([], { headers: corsHeaders });
+                } catch (dbError: any) {
+                    if (dbError.message?.includes('no such table')) {
+                        console.error('DATABASE TABLE MISSING in production:', dbError.message);
+                        return Response.json([], { headers: corsHeaders }); // Return empty rather than 500
+                    }
+                    throw dbError;
                 }
             }
 
@@ -170,10 +173,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
     } catch (error) {
-        if (method === 'GET') {
-            console.error('FATAL API ERROR (Knowledge GET fallback):', error);
-            return Response.json([], { headers: corsHeaders });
-        }
-        return handleError(error, 'Knowledge API', request);
+        return handleError(error, 'Knowledge Hub API', request);
     }
 };
