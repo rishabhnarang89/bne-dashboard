@@ -1,7 +1,7 @@
 -- Migration: Add assignees column to tasks table
 -- Use JSON array for multiple assignees
 
-ALTER TABLE tasks ADD COLUMN assignees TEXT DEFAULT '[]';
+-- ALTER TABLE tasks ADD COLUMN assignees TEXT DEFAULT '[]'; -- Column already exists (skipped after failure)
 
 -- Migrate existing assignee data to assignees array
 UPDATE tasks SET assignees = '["' || assignee || '"]' WHERE assignee IS NOT NULL;
