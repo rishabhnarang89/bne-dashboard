@@ -39,8 +39,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         }
 
         return new Response('Method not allowed', { status: 405, headers: corsHeaders });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Activity API error:', error);
-        return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
+        return Response.json({ error: error.message || 'Unknown error' }, { status: 500, headers: corsHeaders });
     }
 };

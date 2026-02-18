@@ -54,34 +54,42 @@ export const KnowledgeHub = () => {
     const handleSaveCard = async () => {
         if (!currentCard.title?.trim()) return;
 
-        if (currentCard.id) {
-            await updateKnowledgeCard(currentCard.id, {
-                title: currentCard.title,
-                description: currentCard.description,
-                icon: currentCard.icon,
-                color: currentCard.color,
-                sortOrder: currentCard.sortOrder
-            });
-            showToast('Category updated', 'success');
-        } else {
-            await addKnowledgeCard({
-                id: `card_${Date.now()}`,
-                title: currentCard.title,
-                description: currentCard.description,
-                icon: currentCard.icon || 'Folder',
-                color: currentCard.color || 'blue',
-                sortOrder: knowledgeCards.length
-            });
-            showToast('Category created', 'success');
+        try {
+            if (currentCard.id) {
+                await updateKnowledgeCard(currentCard.id, {
+                    title: currentCard.title,
+                    description: currentCard.description,
+                    icon: currentCard.icon,
+                    color: currentCard.color,
+                    sortOrder: currentCard.sortOrder
+                });
+                showToast('Category updated', 'success');
+            } else {
+                await addKnowledgeCard({
+                    id: `card_${Date.now()}`,
+                    title: currentCard.title,
+                    description: currentCard.description,
+                    icon: currentCard.icon || 'Folder',
+                    color: currentCard.color || 'blue',
+                    sortOrder: knowledgeCards.length
+                });
+                showToast('Category created', 'success');
+            }
+            setCardModalOpen(false);
+        } catch (error: any) {
+            showToast(error.message || 'Failed to save category', 'error');
         }
-        setCardModalOpen(false);
     };
 
     const handleDeleteCard = async (id: string) => {
         if (confirm('Are you sure you want to delete this category and all its items?')) {
-            await deleteKnowledgeCard(id);
-            showToast('Category deleted', 'success');
-            setCardModalOpen(false); // Close modal if open
+            try {
+                await deleteKnowledgeCard(id);
+                showToast('Category deleted', 'success');
+                setCardModalOpen(false); // Close modal if open
+            } catch (error: any) {
+                showToast(error.message || 'Failed to delete category', 'error');
+            }
         }
     };
 
@@ -99,34 +107,42 @@ export const KnowledgeHub = () => {
     const handleSaveItem = async () => {
         if (!currentItem.title?.trim() || !activeCardId) return;
 
-        if (currentItem.id) {
-            await updateKnowledgeItem(currentItem.id, activeCardId, {
-                title: currentItem.title,
-                type: currentItem.type,
-                url: currentItem.url,
-                content: currentItem.content
-            });
-            showToast('Item updated', 'success');
-        } else {
-            await addKnowledgeItem({
-                id: `item_${Date.now()}`,
-                cardId: activeCardId,
-                type: currentItem.type || 'link',
-                title: currentItem.title,
-                url: currentItem.url,
-                content: currentItem.content,
-                sortOrder: currentItem.sortOrder || 0
-            });
-            showToast('Item added', 'success');
+        try {
+            if (currentItem.id) {
+                await updateKnowledgeItem(currentItem.id, activeCardId, {
+                    title: currentItem.title,
+                    type: currentItem.type,
+                    url: currentItem.url,
+                    content: currentItem.content
+                });
+                showToast('Item updated', 'success');
+            } else {
+                await addKnowledgeItem({
+                    id: `item_${Date.now()}`,
+                    cardId: activeCardId,
+                    type: currentItem.type || 'link',
+                    title: currentItem.title,
+                    url: currentItem.url,
+                    content: currentItem.content,
+                    sortOrder: currentItem.sortOrder || 0
+                });
+                showToast('Item added', 'success');
+            }
+            setItemModalOpen(false);
+        } catch (error: any) {
+            showToast(error.message || 'Failed to save item', 'error');
         }
-        setItemModalOpen(false);
     };
 
     const handleDeleteItem = async (itemId: string, cardId: string) => {
         if (confirm('Delete this item?')) {
-            await deleteKnowledgeItem(itemId, cardId);
-            showToast('Item deleted', 'success');
-            setItemModalOpen(false); // Close modal
+            try {
+                await deleteKnowledgeItem(itemId, cardId);
+                showToast('Item deleted', 'success');
+                setItemModalOpen(false); // Close modal
+            } catch (error: any) {
+                showToast(error.message || 'Failed to delete item', 'error');
+            }
         }
     };
 

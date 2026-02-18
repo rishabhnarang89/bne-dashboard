@@ -159,5 +159,68 @@ export const d1Client = {
             });
             return res.json();
         }
+    },
+
+    knowledge: {
+        async get() {
+            const res = await fetch(`${API_BASE}/knowledge`);
+            if (!res.ok) throw new Error(`Knowledge API failed: ${res.status}`);
+            const data = await res.json();
+            return toCamelCase(data);
+        },
+        async createCard(card: any) {
+            const res = await fetch(`${API_BASE}/knowledge`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ entityType: 'card', ...toSnakeCase(card) })
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.message || data.error || 'Create card failed');
+            return data;
+        },
+        async updateCard(id: string, updates: any) {
+            const res = await fetch(`${API_BASE}/knowledge`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ entityType: 'card', id, ...toSnakeCase(updates) })
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.message || data.error || 'Update card failed');
+            return data;
+        },
+        async deleteCard(id: string) {
+            const res = await fetch(`${API_BASE}/knowledge?entityType=card&id=${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.message || data.error || 'Delete card failed');
+            return data;
+        },
+        async createItem(item: any) {
+            const res = await fetch(`${API_BASE}/knowledge`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ entityType: 'item', ...toSnakeCase(item) })
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.message || data.error || 'Create item failed');
+            return data;
+        },
+        async updateItem(id: string, updates: any) {
+            const res = await fetch(`${API_BASE}/knowledge`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                // Note: updates usually don't contain ID, so we pass it explicitly if needed or rely on updates having it
+                // The API expects 'id' in the body.
+                body: JSON.stringify({ entityType: 'item', id, ...toSnakeCase(updates) })
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.message || data.error || 'Update item failed');
+            return data;
+        },
+        async deleteItem(id: string) {
+            const res = await fetch(`${API_BASE}/knowledge?entityType=item&id=${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.message || data.error || 'Delete item failed');
+            return data;
+        }
     }
 };

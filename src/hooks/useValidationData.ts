@@ -1013,7 +1013,10 @@ export function useValidationData() {
                     d1Client.teachers.getAll(),
                     d1Client.interviews.getAll(),
                     d1Client.goals.get(),
-                    fetch('/api/knowledge').then(res => res.ok ? res.json() : null)
+                    d1Client.knowledge.get().catch(err => {
+                        console.error('Knowledge API load failed:', err);
+                        return null; // Return null to trigger fallback or empty state, but log error
+                    })
                 ]);
 
                 // ====================================================================
@@ -1100,14 +1103,12 @@ export function useValidationData() {
 
                         for (const card of missingDefaults) {
                             try {
-                                await fetch('/api/knowledge', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ entityType: 'card', ...card })
-                                });
+                                await d1Client.knowledge.createCard(card);
                                 // Add timestamp for local state
                                 seededCards.push({ ...card, createdAt: new Date().toISOString() });
-                            } catch (e) { console.error('Seeding failed', e); }
+                            } catch (e) {
+                                console.error('Seeding failed', e);
+                            }
                         }
                         setKnowledgeCards(seededCards);
                     } else {
@@ -1628,54 +1629,46 @@ export function useValidationData() {
 
         if (isOnline) {
             try {
-                await fetch('/api/knowledge', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        entityType: 'card',
-                        id: card.id,
-                        title: card.title,
-                        description: card.description,
-                        icon: card.icon,
-                        color: card.color,
-                        sort_order: card.sortOrder // Fix mapping
-                    })
-                });
+                await d1Client.knowledge.createCard(card);
             } catch (error) {
                 console.error('KB Sync error:', error);
+                // Revert optimistic update
+                setKnowledgeCards(prev => prev.filter(c => c.id !== newCard.id));
+                throw error;
             }
         }
     };
 
     const updateKnowledgeCard = async (id: string, updates: Partial<KnowledgeCard>) => {
+        const originalCard = knowledgeCards.find(c => c.id === id);
+        if (!originalCard) return;
+
         setKnowledgeCards(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
 
         if (isOnline) {
             try {
-                await fetch('/api/knowledge', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        entityType: 'card',
-                        id,
-                        ...updates,
-                        sort_order: updates.sortOrder !== undefined ? updates.sortOrder : undefined // Fix mapping if present
-                    })
-                });
+                await d1Client.knowledge.updateCard(id, updates);
             } catch (error) {
                 console.error('KB Sync error:', error);
+                // Revert optimistic update
+                setKnowledgeCards(prev => prev.map(c => c.id === id ? originalCard : c));
+                throw error;
             }
         }
     };
 
     const deleteKnowledgeCard = async (id: string) => {
+        const originalCard = knowledgeCards.find(c => c.id === id);
         setKnowledgeCards(prev => prev.filter(c => c.id !== id));
 
         if (isOnline) {
             try {
-                await fetch(`/api/knowledge?entityType=card&id=${id}`, { method: 'DELETE' });
+                await d1Client.knowledge.deleteCard(id);
             } catch (error) {
                 console.error('KB Sync error:', error);
+                // Revert
+                if (originalCard) setKnowledgeCards(prev => [...prev, originalCard]);
+                throw error;
             }
         }
     };
@@ -1690,27 +1683,26 @@ export function useValidationData() {
 
         if (isOnline) {
             try {
-                await fetch('/api/knowledge', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        entityType: 'item',
-                        id: item.id,
-                        card_id: item.cardId,
-                        type: item.type,
-                        title: item.title,
-                        url: item.url,
-                        content: item.content,
-                        sort_order: item.sortOrder
-                    })
-                });
+                await d1Client.knowledge.createItem(item);
             } catch (error) {
                 console.error('KB Sync error:', error);
+                // Revert
+                setKnowledgeCards(prev => prev.map(c => {
+                    if (c.id === item.cardId) {
+                        return { ...c, items: c.items.filter(i => i.id !== item.id) };
+                    }
+                    return c;
+                }));
+                throw error;
             }
         }
     };
 
     const updateKnowledgeItem = async (id: string, cardId: string, updates: Partial<KnowledgeItem>) => {
+        const card = knowledgeCards.find(c => c.id === cardId);
+        const originalItem = card?.items.find(i => i.id === id);
+        if (!originalItem) return;
+
         setKnowledgeCards(prev => prev.map(c => {
             if (c.id === cardId) {
                 return { ...c, items: c.items.map(i => i.id === id ? { ...i, ...updates } : i) };
@@ -1720,27 +1712,25 @@ export function useValidationData() {
 
         if (isOnline) {
             try {
-                // Map camelCase to snake_case for API
-                const apiUpdates: any = { entityType: 'item', id };
-                if (updates.cardId) apiUpdates.card_id = updates.cardId;
-                if (updates.type) apiUpdates.type = updates.type;
-                if (updates.title) apiUpdates.title = updates.title;
-                if (updates.url) apiUpdates.url = updates.url;
-                if (updates.content) apiUpdates.content = updates.content;
-                if (updates.sortOrder) apiUpdates.sort_order = updates.sortOrder;
-
-                await fetch('/api/knowledge', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(apiUpdates)
-                });
+                await d1Client.knowledge.updateItem(id, updates);
             } catch (error) {
                 console.error('KB Sync error:', error);
+                // Revert
+                setKnowledgeCards(prev => prev.map(c => {
+                    if (c.id === cardId) {
+                        return { ...c, items: c.items.map(i => i.id === id ? originalItem : i) };
+                    }
+                    return c;
+                }));
+                throw error;
             }
         }
     };
 
     const deleteKnowledgeItem = async (id: string, cardId: string) => {
+        const card = knowledgeCards.find(c => c.id === cardId);
+        const originalItem = card?.items.find(i => i.id === id);
+
         setKnowledgeCards(prev => prev.map(c => {
             if (c.id === cardId) {
                 return { ...c, items: c.items.filter(i => i.id !== id) };
@@ -1750,9 +1740,19 @@ export function useValidationData() {
 
         if (isOnline) {
             try {
-                await fetch(`/api/knowledge?entityType=item&id=${id}`, { method: 'DELETE' });
+                await d1Client.knowledge.deleteItem(id);
             } catch (error) {
                 console.error('KB Sync error:', error);
+                // Revert
+                if (originalItem) {
+                    setKnowledgeCards(prev => prev.map(c => {
+                        if (c.id === cardId) {
+                            return { ...c, items: [...c.items, originalItem] };
+                        }
+                        return c;
+                    }));
+                }
+                throw error;
             }
         }
     };
