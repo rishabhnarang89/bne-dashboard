@@ -146,6 +146,87 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 }
             }
 
+            case 'PUT': {
+                const taskId = url.searchParams.get('id');
+                if (!taskId) return Response.json({ error: 'Missing task ID' }, { status: 400, headers: corsHeaders });
+
+                const updates = await request.json() as any;
+
+                // Fields to potentially update
+                const validFields = [
+                    'title', 'notes', 'priority', 'week_id', 'due_date',
+                    'completed', 'completed_at', 'is_default', 'subtasks',
+                    'linked_interview_id', 'linked_teacher_id', 'assignees', 'last_modified_by'
+                ];
+
+                const fieldsToUpdate = [];
+                const values = [];
+
+                // Normalization helpers
+                if (updates.weekId !== undefined) updates.week_id = parseInt(String(updates.weekId));
+                if (updates.isDefault !== undefined) updates.is_default = updates.isDefault ? 1 : 0;
+                if (updates.dueDate !== undefined) updates.due_date = updates.dueDate;
+                if (updates.linkedInterviewId !== undefined) updates.linked_interview_id = updates.linkedInterviewId;
+                if (updates.linkedTeacherId !== undefined) updates.linked_teacher_id = updates.linkedTeacherId;
+                if (updates.lastModifiedBy !== undefined) updates.last_modified_by = updates.lastModifiedBy;
+
+                // Handle assignees
+                if (updates.assigness !== undefined) updates.assignees = updates.assigness; // Fix typo if any
+                if (updates.assignees !== undefined && typeof updates.assignees !== 'string') {
+                    updates.assignees = JSON.stringify(updates.assignees);
+                }
+                // Handle subtasks
+                if (updates.subtasks !== undefined && typeof updates.subtasks !== 'string') {
+                    updates.subtasks = JSON.stringify(updates.subtasks);
+                }
+                // Handle completed
+                if (updates.completed !== undefined) {
+                    updates.completed = updates.completed ? 1 : 0;
+                }
+
+                for (const field of validFields) {
+                    if (updates[field] !== undefined) {
+                        fieldsToUpdate.push(`${field} = ?`);
+                        values.push(updates[field]);
+                    }
+                }
+
+                if (fieldsToUpdate.length === 0) {
+                    return Response.json({ success: true, message: 'No updates provided' }, { headers: corsHeaders });
+                }
+
+                // Add ID to values for WHERE clause
+                values.push(taskId);
+
+                // Fetch current state for logging
+                let taskTitle = `Task ID ${taskId}`;
+                try {
+                    const existing = await env.DB.prepare('SELECT title FROM tasks WHERE id = ?').bind(taskId).first() as any;
+                    if (existing) taskTitle = existing.title;
+                } catch (_) { /* ignore */ }
+
+                await env.DB.prepare(`UPDATE tasks SET ${fieldsToUpdate.join(', ')} WHERE id = ?`)
+                    .bind(...values)
+                    .run();
+
+                // Log Activity
+                try {
+                    await env.DB.prepare(`
+                        INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
+                        VALUES (?, 'UPDATE', 'TASK', ?, ?, ?)
+                    `).bind(
+                        updates.last_modified_by || 'Unknown User',
+                        taskId,
+                        taskTitle,
+                        JSON.stringify(updates)
+                    ).run();
+                } catch (logError) {
+                    console.error('Failed to log update:', logError);
+                }
+
+                return Response.json({ success: true }, { headers: corsHeaders });
+            }
+
             case 'DELETE': {
                 const taskId = url.searchParams.get('id');
                 if (!taskId) return Response.json({ error: 'Missing task ID' }, { status: 400, headers: corsHeaders });
