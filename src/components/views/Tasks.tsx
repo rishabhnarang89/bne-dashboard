@@ -45,6 +45,9 @@ export const Tasks = () => {
     const [currentTask, setCurrentTask] = useState<Partial<Task>>({});
     const [isCreating, setIsCreating] = useState(false);
 
+    // Delete Confirmation State
+    const [deleteConfirmationId, setDeleteConfirmationId] = useState<string | null>(null);
+
     // Filter Logic
     const filteredTasks = useMemo(() => {
         return tasks.filter(task => {
@@ -266,7 +269,7 @@ export const Tasks = () => {
                         <Edit3 size={16} />
                     </button>
                     {!task.isDefault && (
-                        <button className="btn btn-ghost btn-sm btn-icon" onClick={() => deleteTask(task.id)} style={{ color: 'var(--danger)' }}>
+                        <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setDeleteConfirmationId(task.id)} style={{ color: 'var(--danger)' }}>
                             <Trash2 size={16} />
                         </button>
                     )}
@@ -483,6 +486,40 @@ export const Tasks = () => {
                             onChange={e => setCurrentTask({ ...currentTask, notes: e.target.value })}
                         />
                     </div>
+                </div>
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <Modal
+                isOpen={!!deleteConfirmationId}
+                onClose={() => setDeleteConfirmationId(null)}
+                title="Confirm Deletion"
+                size="sm"
+                footer={
+                    <>
+                        <button className="btn btn-secondary" onClick={() => setDeleteConfirmationId(null)}>Cancel</button>
+                        <button
+                            className="btn btn-primary"
+                            style={{ background: 'var(--danger)', borderColor: 'var(--danger)' }}
+                            onClick={async () => {
+                                if (deleteConfirmationId) {
+                                    try {
+                                        await deleteTask(deleteConfirmationId);
+                                        showToast('Task deleted', 'success');
+                                    } catch (e) {
+                                        showToast('Failed to delete task', 'error');
+                                    }
+                                    setDeleteConfirmationId(null);
+                                }
+                            }}
+                        >
+                            Delete Task
+                        </button>
+                    </>
+                }
+            >
+                <div style={{ padding: '10px 0', color: 'var(--text-muted)' }}>
+                    Are you sure you want to delete this task? This action cannot be undone.
                 </div>
             </Modal>
         </div>

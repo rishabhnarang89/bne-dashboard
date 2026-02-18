@@ -48,24 +48,34 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 try {
                     const task = await request.json() as any;
 
-                    // ✅ Input Validation
-                    const requiredFields = ['title', 'priority'];
-                    const missing = requiredFields.filter(field => !task[field]);
+                    // Normalize input (handle snake_case vs camelCase)
+                    const title = task.title;
+                    const notes = task.notes || null;
+                    const priority = task.priority || 'medium';
+                    const weekId = task.week_id ? parseInt(String(task.week_id)) : (task.weekId ? parseInt(String(task.weekId)) : 1);
+                    const dueDate = task.due_date || task.dueDate || null;
+                    const isDefault = task.is_default !== undefined ? task.is_default : (task.isDefault !== undefined ? task.isDefault : false);
+                    const completed = task.completed !== undefined ? task.completed : false;
+                    const completedAt = task.completed_at || task.completedAt || null;
+                    const createdAt = task.created_at || task.createdAt || new Date().toISOString();
+                    const subtasks = task.subtasks || [];
+                    const linkedInterviewId = task.linked_interview_id || task.linkedInterviewId || null;
+                    const linkedTeacherId = task.linked_teacher_id || task.linkedTeacherId || null;
+                    const lastModifiedBy = task.last_modified_by || task.lastModifiedBy || null;
 
-                    if (missing.length > 0) {
-                        return Response.json({ error: `Missing required fields: ${missing.join(', ')}` }, { status: 400, headers: corsHeaders });
+                    // ✅ Input Validation
+                    if (!title) {
+                        return Response.json({ error: `Missing required field: title` }, { status: 400, headers: corsHeaders });
                     }
 
                     // Normalize ID: If it's a local 'custom_' ID, let's allow it as a string, or generate a UUID if needed
-                    // ideally we should treat ID as TEXT in D1 as per schema.
                     if (!task.id) {
                         task.id = crypto.randomUUID();
                     }
 
-                    // Normalize week_id
-                    task.week_id = task.week_id ? parseInt(String(task.week_id)) : 1;
-
-                    console.log('SYNC TASK PAYLOAD:', JSON.stringify(task));
+                    console.log('SYNC TASK PAYLOAD (Normalized):', JSON.stringify({
+                        id: task.id, title, priority, weekId, isDefault, assignees: task.assignees
+                    }));
 
                     // Handle assignees
                     let assignees = task.assignees || [];
@@ -87,29 +97,26 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                         legacyAssignee = task.assignee;
                     }
 
-                    // Log calculated values
-                    console.log('SYNC TASK Calculated:', { id: task.id, week_id: task.week_id, legacyAssignee, assignees });
-
                     const result = await env.DB.prepare(`
                         INSERT INTO tasks (id, title, notes, week_id, priority, due_date, completed, completed_at, created_at, is_default, subtasks, linked_interview_id, linked_teacher_id, assignee, assignees, last_modified_by)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     `).bind(
                         task.id,
-                        task.title,
-                        task.notes || null,
-                        task.week_id,
-                        task.priority,
-                        task.due_date || null,
-                        task.completed ? 1 : 0,
-                        task.completed_at || null,
-                        task.created_at || new Date().toISOString(),
-                        task.isDefault ? 1 : 0,
-                        JSON.stringify(task.subtasks || []),
-                        task.linked_interview_id || null,
-                        task.linked_teacher_id || null,
+                        title,
+                        notes,
+                        weekId,
+                        priority,
+                        dueDate,
+                        completed ? 1 : 0,
+                        completedAt,
+                        createdAt,
+                        isDefault ? 1 : 0,
+                        JSON.stringify(subtasks),
+                        linkedInterviewId,
+                        linkedTeacherId,
                         legacyAssignee,
                         JSON.stringify(assignees),
-                        task.lastModifiedBy || null
+                        lastModifiedBy
                     ).run();
 
                     console.log('SYNC TASK DB RESULT:', JSON.stringify(result));
@@ -120,10 +127,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                             INSERT INTO activity_logs (user_name, action_type, entity_type, entity_id, entity_name, details)
                             VALUES (?, 'CREATE', 'TASK', ?, ?, ?)
                         `).bind(
-                            task.lastModifiedBy || 'Unknown User',
+                            lastModifiedBy || 'Unknown User',
                             task.id,
-                            task.title,
-                            JSON.stringify({ priority: task.priority, due_date: task.due_date, assignees, linked_teacher_id: task.linked_teacher_id })
+                            title,
+                            JSON.stringify({ priority, due_date: dueDate, assignees, linked_teacher_id: linkedTeacherId })
                         ).run();
                     } catch (logError) {
                         console.error('Failed to log update:', logError);

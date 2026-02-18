@@ -1250,9 +1250,13 @@ export function useValidationData() {
 
         if (isOnline) {
             try {
-                await d1Client.tasks.create(newTask);
+                const response = await d1Client.tasks.create(newTask);
+                if (response.error) throw new Error(response.error);
             } catch (error) {
                 console.error('Sync error:', error);
+                // Revert optimistic update
+                setTasks(prev => prev.filter(t => t.id !== newTask.id));
+                throw error;
             }
         }
 
@@ -1282,23 +1286,30 @@ export function useValidationData() {
 
         if (isOnline) {
             try {
-                await d1Client.tasks.update(id, { ...updatedTask, lastModifiedBy: user?.name });
+                const response = await d1Client.tasks.update(id, { ...updatedTask, lastModifiedBy: user?.name });
+                if (response.error) throw new Error(response.error);
             } catch (error) {
                 console.error('Sync error:', error);
                 // Revert on error
                 setTasks(prev => prev.map(t => t.id === id ? originalTask : t));
+                throw error;
             }
         }
     };
 
     const deleteTask = async (id: string) => {
+        const originalTask = tasks.find(t => t.id === id);
         setTasks(prev => prev.filter(t => t.id !== id));
 
         if (isOnline) {
             try {
-                await d1Client.tasks.delete(id, user?.name);
+                const response = await d1Client.tasks.delete(id, user?.name);
+                if (response.error) throw new Error(response.error);
             } catch (error) {
                 console.error('Sync error:', error);
+                // Revert
+                if (originalTask) setTasks(prev => [...prev, originalTask]);
+                throw error;
             }
         }
     };
