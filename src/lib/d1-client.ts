@@ -38,7 +38,13 @@ export const d1Client = {
             const res = await fetch(`${API_BASE}/tasks`);
             if (!res.ok) {
                 console.error('Tasks API error:', res.status, res.statusText);
-                throw new Error(`Tasks API failed: ${res.status}`);
+                let message = `Tasks API failed: ${res.status}`;
+                try {
+                    const errorBody = await res.json();
+                    if (errorBody.message) message = errorBody.message;
+                    else if (errorBody.error) message = errorBody.error;
+                } catch (e) { /* ignore */ }
+                throw new Error(message);
             }
             const data = await res.json();
             return toCamelCase(data);
@@ -49,7 +55,11 @@ export const d1Client = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(toSnakeCase(task))
             });
-            return res.json();
+            const data = await res.json();
+            if (!res.ok || data.error) {
+                throw new Error(data.message || data.error || `Create failed: ${res.status}`);
+            }
+            return data;
         },
         async update(id: string, updates: any) {
             const res = await fetch(`${API_BASE}/tasks?id=${id}`, {
@@ -57,13 +67,21 @@ export const d1Client = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(toSnakeCase(updates))
             });
-            return res.json();
+            const data = await res.json();
+            if (!res.ok || data.error) {
+                throw new Error(data.message || data.error || `Update failed: ${res.status}`);
+            }
+            return data;
         },
         async delete(id: string, user?: string) {
             const params = new URLSearchParams({ id });
             if (user) params.set('user', user);
             const res = await fetch(`${API_BASE}/tasks?${params}`, { method: 'DELETE' });
-            return res.json();
+            const data = await res.json();
+            if (!res.ok || data.error) {
+                throw new Error(data.message || data.error || `Delete failed: ${res.status}`);
+            }
+            return data;
         }
     },
 

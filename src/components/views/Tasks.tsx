@@ -147,9 +147,9 @@ export const Tasks = () => {
                 showToast('Task updated', 'success');
             }
             setEditModalOpen(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error in handleSave:', error);
-            showToast('Failed to save task', 'error');
+            showToast(`Failed to save task: ${error.message || 'Unknown error'}`, 'error');
             // Keep modal open so data isn't lost if there was a REAL crash
         }
     };
@@ -506,8 +506,8 @@ export const Tasks = () => {
                                     try {
                                         await deleteTask(deleteConfirmationId);
                                         showToast('Task deleted', 'success');
-                                    } catch (e) {
-                                        showToast('Failed to delete task', 'error');
+                                    } catch (e: any) {
+                                        showToast(`Failed to delete task: ${e.message || 'Unknown error'}`, 'error');
                                     }
                                     setDeleteConfirmationId(null);
                                 }
