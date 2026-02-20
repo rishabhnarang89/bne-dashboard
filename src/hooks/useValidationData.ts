@@ -804,8 +804,8 @@ export interface KnowledgeCard {
 // ============================================================================
 
 export const SPRINT_START = new Date('2026-01-23');
-export const SPRINT_END = new Date('2026-02-20');
-export const DECISION_DATE = new Date('2026-02-20');
+export const SPRINT_END = new Date('2026-03-10');
+export const DECISION_DATE = new Date('2026-03-10');
 
 export const WEEKS = [
     { id: 1, title: "Week 1: Outreach & Prep (Immediate)", dates: "Jan 23-29", startDate: '2026-01-23', endDate: '2026-01-29' },
