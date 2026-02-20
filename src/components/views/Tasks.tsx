@@ -36,7 +36,7 @@ export const Tasks = () => {
 
     // UI State
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+    const [filterStatus, setFilterStatus] = useState<FilterStatus>('incomplete');
     const [filterAssignee, setFilterAssignee] = useState<string>('all'); // 'all', 'me', or specific user
     const [groupBy, setGroupBy] = useState<GroupBy>('priority');
 
